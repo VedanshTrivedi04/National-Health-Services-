@@ -233,6 +233,13 @@ class Doctor(models.Model):
     @property
     def phone(self):
         return self.user.phone
+    @property
+    def average_rating(self):
+        """Return doctor’s average rating"""
+        reviews = self.reviews.all()
+        if reviews.count() == 0:
+            return 0
+        return round(sum(r.rating for r in reviews) / reviews.count(), 2)
 
 
 class DoctorAvailability(models.Model):
@@ -503,3 +510,36 @@ class Admin(models.Model):
 
     def __str__(self):
         return f"Admin: {self.user.full_name} ({self.admin_role})"
+    
+
+class DoctorReview(models.Model):
+    doctor = models.ForeignKey(
+        Doctor,
+        on_delete=models.CASCADE,
+        related_name="reviews"
+    )
+    patient = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="doctor_reviews",
+        limit_choices_to={'role': 'patient'}
+    )
+    appointment = models.ForeignKey(
+        Appointment,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="appointment_review"
+    )
+
+    rating = models.IntegerField()  # 1–5 stars
+    comment = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "doctor_reviews"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"⭐ {self.rating} by {self.patient.full_name} for {self.doctor.full_name}"

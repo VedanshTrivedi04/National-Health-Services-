@@ -1,6 +1,7 @@
 // src/services/api.js
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
+// const API_BASE_URL = 'http://127.0.0.1:8000/api';
+const API_BASE_URL = 'https://notices-subjects-anthony-cluster.trycloudflare.com/api';
 
 class ApiService {
   constructor() {
@@ -334,7 +335,17 @@ async rescheduleAppointment(id, data) {
     return this.endConsultation(appointmentId);
   }
 
+  async getDoctorReviews(doctorId) {
+    // returns either array or paginated object
+    return this.safeRequest(`/doctors/${doctorId}/reviews/`);
+  }
 
+  async addDoctorReview(doctorId, data) {
+    return this.safeRequest(`/doctor/${doctorId}/reviews/add/`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
   // ======================
   // 🕒 QUEUE STATUS (VIEW ONLY)
   // ======================

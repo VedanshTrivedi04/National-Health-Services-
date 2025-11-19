@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate
 from django.utils import timezone
 from .models import (
     User, Doctor, Department, Appointment, MedicalRecord,
-    FamilyMember, DoctorAvailability, Admin, QueueStatus
+    FamilyMember, DoctorAvailability, Admin, QueueStatus, DoctorReview
 )
 
 # ==================== Authentication Serializers ====================
@@ -114,10 +114,16 @@ class DoctorAvailabilitySerializer(serializers.ModelSerializer):
 
 
 class DoctorSerializer(serializers.ModelSerializer):
-    """Doctor profile serializer"""
     full_name = serializers.CharField(source='user.full_name', read_only=True)
     email = serializers.CharField(source='user.email', read_only=True)
     phone = serializers.CharField(source='user.phone', read_only=True)
+
+    # 🔥 Add nested department object
+    department = DepartmentSerializer(read_only=True)
+
+    # 🔥 Also include department_id separately (optional but useful)
+    department_id = serializers.IntegerField(source='department.id', read_only=True)
+
     department_name = serializers.CharField(source='department.name', read_only=True)
     availabilities = DoctorAvailabilitySerializer(many=True, read_only=True)
 
@@ -125,13 +131,17 @@ class DoctorSerializer(serializers.ModelSerializer):
         model = Doctor
         fields = [
             'id', 'user', 'full_name', 'email', 'phone',
-            'specialty', 'department', 'department_name',
+            'specialty', 
+            'department',         # nested object
+            'department_id',      # ID only
+            'department_name',
             'qualification', 'experience', 'license_number',
             'rating', 'consultation_fee', 'bio',
             'is_available', 'is_verified', 'queue_status',
             'current_token', 'availabilities', 'created_at'
         ]
         read_only_fields = ['user', 'rating', 'is_verified', 'created_at']
+
 
 
 class DoctorRegistrationSerializer(serializers.Serializer):
@@ -330,3 +340,22 @@ class AdminDashboardSerializer(serializers.Serializer):
     today_appointments = serializers.IntegerField()
     pending_verifications = serializers.IntegerField()
     recent_registrations = UserProfileSerializer(many=True)
+
+class DoctorReviewSerializer(serializers.ModelSerializer):
+    patient_name = serializers.CharField(source="patient.full_name", read_only=True)
+    doctor_name = serializers.CharField(source="doctor.full_name", read_only=True)
+
+    class Meta:
+        model = DoctorReview
+        fields = [
+            "id",
+            "doctor",
+            "doctor_name",
+            "patient",
+            "patient_name",
+            "appointment",
+            "rating",
+            "comment",
+            "created_at"
+        ]
+        read_only_fields = ["doctor", "patient", "created_at"]

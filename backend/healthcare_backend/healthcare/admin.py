@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import (
     User, Doctor, Department, Appointment, MedicalRecord,
-    FamilyMember, DoctorAvailability, Admin as AdminModel, QueueStatus
+    FamilyMember, DoctorAvailability, Admin as AdminModel, QueueStatus,DoctorReview
 )
 
 @admin.register(User)
@@ -77,3 +77,4 @@ admin.site.register(DoctorAvailability)
 admin.site.register(FamilyMember)
 admin.site.register(AdminModel)
 admin.site.register(QueueStatus)
+admin.site.register(DoctorReview)

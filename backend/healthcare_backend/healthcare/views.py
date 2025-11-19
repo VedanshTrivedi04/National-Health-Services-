@@ -1,24 +1,28 @@
 from rest_framework import viewsets, status, permissions
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils import timezone
-from django.db.models import Q, Count
+from django.db.models import Count
 from datetime import datetime, timedelta, date, time
 
 from channels.layers import get_channel_layer
-from datetime import time
-
 from asgiref.sync import async_to_sync
+from rest_framework.permissions import IsAuthenticated
 from .models import (
-    User, Doctor, Department, Appointment, MedicalRecord,
-    FamilyMember, DoctorAvailability, Admin, QueueStatus
+    User, Doctor, Department, Appointment, MedicalRecord, DoctorReview,
+    FamilyMember, DoctorAvailability, QueueStatus
 )
 from .serializers import *
-from .permissions import IsPatient, IsDoctor, IsAdmin, IsDoctorOrAdmin
+from .permissions import IsPatient, IsDoctor, IsAdmin
+from .models import QueueStatus
+from .serializers import QueueStatusSerializer
+from rest_framework import viewsets
 
+# ============================================================
+#                       AUTHENTICATION
+# ============================================================
 
-# ==================== Authentication Views ====================
 class AuthViewSet(viewsets.ViewSet):
     permission_classes = [permissions.AllowAny]
 
@@ -33,8 +37,8 @@ class AuthViewSet(viewsets.ViewSet):
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
                 'message': 'Registration successful'
-            }, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            }, status=201)
+        return Response(serializer.errors, status=400)
 
     @action(detail=False, methods=['post'])
     def login(self, request):
@@ -42,23 +46,29 @@ class AuthViewSet(viewsets.ViewSet):
         if serializer.is_valid():
             user = serializer.validated_data['user']
             refresh = RefreshToken.for_user(user)
+
             dashboard_urls = {
                 'patient': '/patient/dashboard',
                 'doctor': '/doctor/dashboard',
-                'admin': '/admin/dashboard'
+                'admin': '/admin/dashboard',
             }
+
             return Response({
                 'user': UserProfileSerializer(user).data,
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
                 'role': user.role,
                 'dashboard_url': dashboard_urls.get(user.role),
-                'message': f'Welcome {user.full_name}!'
+                'message': f"Welcome {user.full_name}!"
             })
-        return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
+
+        return Response(serializer.errors, status=401)
 
 
-# ==================== Patient Views ====================
+# ============================================================
+#                        PATIENT
+# ============================================================
+
 class PatientViewSet(viewsets.GenericViewSet):
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated, IsPatient]
@@ -81,17 +91,13 @@ class PatientViewSet(viewsets.GenericViewSet):
             patient=user
         ).order_by('-visit_date')[:3]
 
-        total_appointments = Appointment.objects.filter(patient=user).count()
-        pending_appointments = upcoming.count()
-
-        data = {
-            'profile': UserProfileSerializer(user).data,
-            'upcoming_appointments': AppointmentSerializer(upcoming, many=True).data,
-            'recent_records': MedicalRecordSerializer(recent_records, many=True).data,
-            'total_appointments': total_appointments,
-            'pending_appointments': pending_appointments,
-        }
-        return Response(data)
+        return Response({
+            "profile": UserProfileSerializer(user).data,
+            "upcoming_appointments": AppointmentSerializer(upcoming, many=True).data,
+            "recent_records": MedicalRecordSerializer(recent_records, many=True).data,
+            "total_appointments": Appointment.objects.filter(patient=user).count(),
+            "pending_appointments": upcoming.count(),
+        })
 
     @action(detail=False, methods=['get'])
     def profile(self, request):
@@ -103,160 +109,111 @@ class PatientViewSet(viewsets.GenericViewSet):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=400)
 
 
-# ==================== Doctor Views ====================
+# ============================================================
+#                        DOCTOR
+# ============================================================
+
 class DoctorViewSet(viewsets.ModelViewSet):
     serializer_class = DoctorSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'doctor':
+        if user.role == "doctor":
             return Doctor.objects.filter(user=user)
-        elif user.role == 'admin':
+        if user.role == "admin":
             return Doctor.objects.all()
         return Doctor.objects.filter(is_verified=True, is_available=True)
 
     @action(detail=False, methods=['get'], permission_classes=[IsDoctor])
     def dashboard(self, request):
-        try:
-            doctor = request.user.doctor_profile
-        except Doctor.DoesNotExist:
-            return Response({"error": "Doctor profile not found."}, status=404)
-
+        doctor = request.user.doctor_profile
         today = timezone.now().date()
 
         today_appointments = Appointment.objects.filter(
-            doctor=doctor,
-            appointment_date=today
+            doctor=doctor, appointment_date=today
         ).order_by('queue_position')
 
-        total_patients = Appointment.objects.filter(
-            doctor=doctor
-        ).values('patient').distinct().count()
-
-        completed_today = today_appointments.filter(status='completed').count()
-
         queue_status = QueueStatus.objects.filter(
-            doctor=doctor,
-            appointment_date=today
+            doctor=doctor, appointment_date=today
         ).first()
 
         return Response({
-            'profile': DoctorSerializer(doctor).data,
-            'today_appointments': AppointmentSerializer(today_appointments, many=True).data,
-            'total_patients': total_patients,
-            'completed_today': completed_today,
-            'current_queue': QueueStatusSerializer(queue_status).data if queue_status else None,
+            "profile": DoctorSerializer(doctor).data,
+            "today_appointments": AppointmentSerializer(today_appointments, many=True).data,
+            "total_patients": Appointment.objects.filter(doctor=doctor).values('patient').distinct().count(),
+            "completed_today": today_appointments.filter(status="completed").count(),
+            "current_queue": QueueStatusSerializer(queue_status).data if queue_status else None,
         })
 
     @action(detail=False, methods=['get'], permission_classes=[IsDoctor])
     def appointments(self, request):
         doctor = request.user.doctor_profile
-        date_param = request.query_params.get('date', timezone.now().date())
+        date_param = request.query_params.get("date", timezone.now().date())
 
         appointments = Appointment.objects.filter(
             doctor=doctor,
             appointment_date=date_param
-        ).order_by('queue_position')
+        ).order_by("queue_position")
 
         return Response(AppointmentSerializer(appointments, many=True).data)
 
-    # availability unchanged
     @action(detail=False, methods=['get', 'post'], permission_classes=[IsDoctor])
     def availability(self, request):
         doctor = request.user.doctor_profile
 
-        if request.method == 'GET':
-            availabilities = DoctorAvailability.objects.filter(doctor=doctor)
-            return Response(DoctorAvailabilitySerializer(availabilities, many=True).data)
+        if request.method == "GET":
+            return Response(
+                DoctorAvailabilitySerializer(
+                    DoctorAvailability.objects.filter(doctor=doctor), many=True
+                ).data
+            )
 
         data = request.data
-        data['doctor'] = doctor.id
+        data["doctor"] = doctor.id
+
         slot = DoctorAvailability.objects.filter(
-            doctor=doctor,
-            day_of_week=data.get('day_of_week')
+            doctor=doctor, day_of_week=data.get("day_of_week")
         ).first()
 
-        serializer = DoctorAvailabilitySerializer(slot, data=data) if slot else DoctorAvailabilitySerializer(data=data)
+        serializer = (
+            DoctorAvailabilitySerializer(slot, data=data)
+            if slot else DoctorAvailabilitySerializer(data=data)
+        )
 
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=201)
+
         return Response(serializer.errors, status=400)
 
-    # helper functions
-    def _update_queue_status(self, doctor, appointment_date):
-        queue_status, created = QueueStatus.objects.get_or_create(
-            doctor=doctor,
-            appointment_date=appointment_date
-        )
 
-        completed = Appointment.objects.filter(
-            doctor=doctor,
-            appointment_date=appointment_date,
-            status='completed'
-        ).count()
+# ============================================================
+#                        ADMIN
+# ============================================================
 
-        current = Appointment.objects.filter(
-            doctor=doctor,
-            appointment_date=appointment_date,
-            status='in_progress'
-        ).first()
-
-        total = Appointment.objects.filter(
-            doctor=doctor,
-            appointment_date=appointment_date,
-            status__in=['scheduled', 'confirmed', 'in_progress', 'completed']
-        ).count()
-
-        queue_status.current_token = current.token_number if current else ""
-        queue_status.total_tokens = total
-        queue_status.completed_tokens = completed
-        queue_status.save()
-
-    def _broadcast_queue_update(self, doctor_id):
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f'queue_{doctor_id}',
-            {
-                'type': 'queue_update',
-                'data': {'status': 'updated', 'message': 'Queue updated'}
-            }
-        )
-
-
-# ==================== Admin Views ====================
 class AdminViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
     @action(detail=False, methods=['get'])
     def dashboard(self, request):
         today = timezone.now().date()
-        stats = {
-            'total_users': User.objects.count(),
-            'total_patients': User.objects.filter(role='patient').count(),
-            'total_doctors': Doctor.objects.count(),
-            'total_departments': Department.objects.filter(is_active=True).count(),
-            'total_appointments': Appointment.objects.count(),
-            'today_appointments': Appointment.objects.filter(appointment_date=today).count(),
-            'pending_verifications': Doctor.objects.filter(is_verified=False).count(),
-            'recent_registrations': UserProfileSerializer(
-                User.objects.order_by('-created_at')[:5],
-                many=True
-            ).data,
-        }
-        return Response(stats)
 
-    @action(detail=False, methods=['post'])
-    def register_doctor(self, request):
-        serializer = DoctorRegistrationSerializer(data=request.data, context={'request': request})
-        if serializer.is_valid():
-            doctor = serializer.save()
-            return Response(DoctorSerializer(doctor).data, status=201)
-        return Response(serializer.errors, status=400)
+        return Response({
+            "total_users": User.objects.count(),
+            "total_patients": User.objects.filter(role="patient").count(),
+            "total_doctors": Doctor.objects.count(),
+            "total_departments": Department.objects.filter(is_active=True).count(),
+            "total_appointments": Appointment.objects.count(),
+            "today_appointments": Appointment.objects.filter(appointment_date=today).count(),
+            "pending_verifications": Doctor.objects.filter(is_verified=False).count(),
+            "recent_registrations": UserProfileSerializer(
+                User.objects.order_by('-created_at')[:5], many=True
+            ).data,
+        })
 
     @action(detail=True, methods=['post'])
     def verify_doctor(self, request, pk=None):
@@ -264,40 +221,15 @@ class AdminViewSet(viewsets.ViewSet):
             doctor = Doctor.objects.get(pk=pk)
             doctor.is_verified = True
             doctor.save()
-            return Response({'message': 'Doctor verified successfully'})
+            return Response({"message": "Doctor verified"})
         except Doctor.DoesNotExist:
-            return Response({'error': 'Doctor not found'}, status=404)
-
-    @action(detail=False, methods=['get'])
-    def users(self, request):
-        return Response(UserProfileSerializer(User.objects.all().order_by('-created_at'), many=True).data)
-
-    @action(detail=False, methods=['get'])
-    def reports(self, request):
-        report_type = request.query_params.get('type', 'appointments')
-
-        if report_type == 'appointments':
-            total = Appointment.objects.count()
-            by_status = list(Appointment.objects.values('status').annotate(count=Count('id')))
-            by_department = list(Appointment.objects.values('department__name').annotate(count=Count('id')))
-            return Response({
-                'total_appointments': total,
-                'by_status': by_status,
-                'by_department': by_department
-            })
-
-        elif report_type == 'doctors':
-            doctors = Doctor.objects.annotate(
-                appointment_count=Count('doctor_appointments')
-            ).values(
-                'id', 'user__full_name', 'specialty', 'rating', 'appointment_count'
-            )
-            return Response({'doctors': list(doctors)})
-
-        return Response({'error': 'Invalid report type'}, status=400)
+            return Response({"error": "Doctor not found"}, status=404)
 
 
-# ==================== Appointment Views ====================
+# ============================================================
+#                     APPOINTMENTS  
+# ============================================================
+
 class AppointmentViewSet(viewsets.ModelViewSet):
     serializer_class = AppointmentSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -306,228 +238,200 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.role == 'patient':
             return Appointment.objects.filter(patient=user)
-        elif user.role == 'doctor':
+        if user.role == 'doctor':
             return Appointment.objects.filter(doctor=user.doctor_profile)
-        elif user.role == 'admin':
+        if user.role == 'admin':
             return Appointment.objects.all()
         return Appointment.objects.none()
 
     def get_serializer_class(self):
-        return AppointmentCreateSerializer if self.action == 'create' else AppointmentSerializer
+        return AppointmentCreateSerializer if self.action == "create" else AppointmentSerializer
 
     def perform_create(self, serializer):
         appointment = serializer.save(patient=self.request.user)
-        self._update_queue_status(appointment.doctor, appointment.appointment_date)
+        self._update_queue(appointment.doctor, appointment.appointment_date)
 
-    @action(detail=True, methods=['post'])
-    def cancel(self, request, pk=None):
-        appointment = self.get_object()
-        if appointment.patient != request.user and request.user.role != 'admin':
-            return Response({'error': 'Not authorized'}, status=403)
-
-        appointment.status = 'cancelled'
-        appointment.save()
-        self._update_queue_status(appointment.doctor, appointment.appointment_date)
-        return Response({'message': 'Appointment cancelled successfully'})
-
-    @action(detail=True, methods=['post'])
-    def reschedule(self, request, pk=None):
-        appointment = self.get_object()
-        if appointment.patient != request.user:
-            return Response({'error': 'Not authorized'}, status=403)
-
-        new_date = request.data.get('appointment_date')
-        new_time = request.data.get('time_slot')
-
-        if new_date and new_time:
-            appointment.appointment_date = new_date
-            appointment.time_slot = new_time
-            appointment.status = 'scheduled'
-            appointment.save()
-            return Response(AppointmentSerializer(appointment).data)
-
-        return Response({'error': 'Invalid date or time'}, status=400)
-@action(detail=False, methods=['get'], url_path='queue_status')
-def queue_status(self, request):
-    user = request.user
-    doctor_id = request.query_params.get("doctor_id")
-
-    # Get today's appointments for that doctor
-    today = datetime.date.today()
-    appointments = Appointment.objects.filter(
-        doctor_id=doctor_id,
-        appointment_date=today
-    ).order_by("token_number")
-
-    # Current token
-    current_token = appointments.filter(status="in-progress").first()
-    current_number = current_token.token_number if current_token else None
-
-    # Get patient's own token
-    patient_appointment = appointments.filter(patient=user).first()
-    patient_token = patient_appointment.token_number if patient_appointment else None
-
-    # Pending list (waiting + arrived)
-    pending = appointments.filter(status__in=["waiting", "arrived"]).values(
-        "token_number", "patient_name"
-    )
-
-    return Response({
-        "current_token": current_number,
-        "pending_tokens": pending,
-        "patient_token": patient_token
-    })
-
-    # ⭐ MOVED HERE — FIXED ⭐
+    # ---------------- Start Consultation ----------------
     @action(detail=True, methods=['post'], permission_classes=[IsDoctor])
     def start_consultation(self, request, pk=None):
-        appointment = self.get_object()
+        appt = self.get_object()
+        if appt.doctor.user != request.user:
+            return Response({"error": "Not authorized"}, status=403)
 
-        if appointment.doctor.user != request.user:
-            return Response({'error': 'Not authorized'}, status=403)
+        appt.status = "in_progress"
+        appt.consultation_started_at = timezone.now()
+        appt.save()
+        return Response(AppointmentSerializer(appt).data)
 
-        appointment.status = 'in_progress'
-        appointment.consultation_started_at = timezone.now()
-        appointment.save()
-
-        return Response(AppointmentSerializer(appointment).data)
-
-    # ⭐ MOVED HERE — FIXED ⭐
+    # ---------------- End Consultation ----------------
     @action(detail=True, methods=['post'], permission_classes=[IsDoctor])
     def end_consultation(self, request, pk=None):
-        appointment = self.get_object()
+        appt = self.get_object()
+        if appt.doctor.user != request.user:
+            return Response({"error": "Not authorized"}, status=403)
 
-        if appointment.doctor.user != request.user:
-            return Response({'error': 'Not authorized'}, status=403)
+        appt.status = "completed"
+        appt.consultation_ended_at = timezone.now()
+        appt.notes = request.data.get("notes", "")
+        appt.prescription = request.data.get("prescription", "")
+        appt.save()
 
-        appointment.status = 'completed'
-        appointment.consultation_ended_at = timezone.now()
-        appointment.notes = request.data.get('notes', '')
-        appointment.prescription = request.data.get('prescription', '')
-        appointment.save()
-
-        # Create medical record if included
-        medical_data = request.data.get('medical_record')
-        if medical_data:
-            medical_data['patient'] = appointment.patient.id
-            medical_data['doctor'] = appointment.doctor.id
-            medical_data['appointment'] = appointment.id
-            serializer = MedicalRecordSerializer(data=medical_data)
+        # Save medical record if provided
+        record = request.data.get("medical_record")
+        if record:
+            record["patient"] = appt.patient.id
+            record["doctor"] = appt.doctor.id
+            record["appointment"] = appt.id
+            serializer = MedicalRecordSerializer(data=record)
             if serializer.is_valid():
                 serializer.save()
 
-        self._update_queue_status(appointment.doctor, appointment.appointment_date)
-        return Response(AppointmentSerializer(appointment).data)
+        self._update_queue(appt.doctor, appt.appointment_date)
+        return Response(AppointmentSerializer(appt).data)
 
-    # AVAILABLE SLOTS unchanged
+    # ---------------- Available Slots ----------------
     @action(detail=False, methods=['get'], url_path='available_slots')
     def available_slots(self, request):
-        doctor_id = request.query_params.get('doctor_id')
-        appointment_date_str = request.query_params.get('date')
+        doctor_id = request.query_params.get("doctor_id")
+        date_str = request.query_params.get("date")
 
-        if not doctor_id or not appointment_date_str:
-            return Response({'error': 'doctor_id and date are required'}, status=400)
-
-        try:
-            doctor = Doctor.objects.get(pk=doctor_id)
-        except Doctor.DoesNotExist:
-            return Response({'error': 'Doctor not found'}, status=404)
+        if not doctor_id or not date_str:
+            return Response({"error": "doctor_id and date required"}, status=400)
 
         try:
-            appointment_date = date.fromisoformat(appointment_date_str)
-        except ValueError:
-            return Response({'error': 'Invalid date format'}, status=400)
+            doctor = Doctor.objects.get(id=doctor_id)
+        except:
+            return Response({"error": "Doctor not found"}, status=404)
 
-        day_name = appointment_date.strftime('%A').lower()
+        try:
+            appt_date = date.fromisoformat(date_str)
+        except:
+            return Response({"error": "Invalid date"}, status=400)
+
+        day = appt_date.strftime("%A").lower()
         availability = DoctorAvailability.objects.filter(
-            doctor=doctor,
-            day_of_week=day_name,
-            is_available=True
+            doctor=doctor, day_of_week=day, is_available=True
         ).first()
 
         if not availability:
-            start_t = time(9, 0)
-            end_t = time(17, 0)
+            start_t, end_t = time(9, 0), time(17, 0)
         else:
-            start_t = availability.start_time
-            end_t = availability.end_time
-            if end_t == time(0, 0):
-                end_t = time(23, 59)
+            start_t, end_t = availability.start_time, availability.end_time or time(23, 59)
 
-        start_dt = datetime.combine(appointment_date, start_t)
-        end_dt = datetime.combine(appointment_date, end_t)
+        start_dt = datetime.combine(appt_date, start_t)
+        end_dt = datetime.combine(appt_date, end_t)
 
         booked = set(
-            t.strftime("%H:%M")
-            for t in Appointment.objects.filter(
+            a.strftime("%H:%M")
+            for a in Appointment.objects.filter(
                 doctor=doctor,
-                appointment_date=appointment_date,
+                appointment_date=appt_date,
                 status__in=['scheduled', 'confirmed', 'in_progress']
-            ).values_list('time_slot', flat=True)
+            ).values_list("time_slot", flat=True)
         )
 
-        available = []
-        current = start_dt
-        while current < end_dt:
-            sv = current.strftime("%H:%M")
-            if sv not in booked:
-                available.append({
-                    "value": sv,
-                    "display": current.strftime("%I:%M %p"),
+        slots = []
+        cur = start_dt
+        while cur < end_dt:
+            v = cur.strftime("%H:%M")
+            if v not in booked:
+                slots.append({
+                    "value": v,
+                    "display": cur.strftime("%I:%M %p"),
                     "duration": "10 minutes"
                 })
-            current += timedelta(minutes=10)
+            cur += timedelta(minutes=10)
 
         return Response({
             "doctor_id": doctor_id,
-            "date": appointment_date_str,
-            "available_slots": available,
-            "total_available": len(available)
+            "date": date_str,
+            "available_slots": slots,
+            "total": len(slots)
         })
 
-    def _update_queue_status(self, doctor, appointment_date):
-        queue_status, created = QueueStatus.objects.get_or_create(
-            doctor=doctor, appointment_date=appointment_date
+    # ---------------- Queue Logic ----------------
+    def _update_queue(self, doctor, appt_date):
+        qs, _ = QueueStatus.objects.get_or_create(
+            doctor=doctor, appointment_date=appt_date
         )
-        total = Appointment.objects.filter(
+        qs.total_tokens = Appointment.objects.filter(
             doctor=doctor,
-            appointment_date=appointment_date,
+            appointment_date=appt_date,
             status__in=['scheduled', 'confirmed', 'in_progress']
         ).count()
-        queue_status.total_tokens = total
-        queue_status.save()
+        qs.save()
 
 
-# ==================== Department Views ====================
+# ============================================================
+#                  LIVE QUEUE STATUS (GLOBAL)
+# ============================================================
+
+@api_view(["GET"])
+def live_queue_status(request):
+    today = date.today()
+    appts = Appointment.objects.filter(appointment_date=today).order_by("token_number")
+
+    current = ""
+    pending = []
+
+    for a in appts:
+        s = (a.status or "").lower()
+
+        if s in ["in_progress", "ongoing"]:
+            current = a.token_number
+
+        if s in ["waiting", "scheduled", "confirmed"]:
+            pending.append({
+                "token_number": a.token_number,
+                "patient_name": a.patient.full_name,
+                "eta_minutes": getattr(a, "eta_minutes", 15)
+            })
+
+    return Response({
+        "current_token": current,
+        "pending_tokens": pending,
+        "total": len(appts)
+    })
+
+
+# ============================================================
+#                  DEPARTMENTS
+# ============================================================
+
 class DepartmentViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Department.objects.filter(is_active=True)
     serializer_class = DepartmentSerializer
-    permission_classes = [permissions.AllowAny]
 
 
-# ==================== Medical Record Views ====================
+# ============================================================
+#                MEDICAL RECORDS
+# ============================================================
+
 class MedicalRecordViewSet(viewsets.ModelViewSet):
     serializer_class = MedicalRecordSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        user = self.request.user
-        if user.role == 'patient':
-            return MedicalRecord.objects.filter(patient=user)
-        elif user.role == 'doctor':
-            return MedicalRecord.objects.filter(doctor=user.doctor_profile)
-        elif user.role == 'admin':
+        u = self.request.user
+        if u.role == "patient":
+            return MedicalRecord.objects.filter(patient=u)
+        if u.role == "doctor":
+            return MedicalRecord.objects.filter(doctor=u.doctor_profile)
+        if u.role == "admin":
             return MedicalRecord.objects.all()
         return MedicalRecord.objects.none()
 
     def perform_create(self, serializer):
-        if self.request.user.role == 'doctor':
+        if self.request.user.role == "doctor":
             serializer.save(doctor=self.request.user.doctor_profile)
         else:
             serializer.save()
 
 
-# ==================== Family Member Views ====================
+# ============================================================
+#               FAMILY MEMBERS
+# ============================================================
+
 class FamilyMemberViewSet(viewsets.ModelViewSet):
     serializer_class = FamilyMemberSerializer
     permission_classes = [permissions.IsAuthenticated, IsPatient]
@@ -539,7 +443,50 @@ class FamilyMemberViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
-# ==================== Queue Status Views ====================
+# ============================================================
+#               DOCTOR REVIEWS
+# ============================================================
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def add_doctor_review(request, doctor_id):
+    try:
+        doctor = Doctor.objects.get(id=doctor_id)
+    except Doctor.DoesNotExist:
+        return Response({"error": "Doctor not found"}, status=404)
+
+    appointment = Appointment.objects.filter(
+        patient=request.user,
+        doctor=doctor,
+        status="completed"
+    ).first()
+
+    rating = request.data.get("rating")
+    comment = request.data.get("comment", "")
+
+    if not rating:
+        return Response({"error": "Rating is required"}, status=400)
+
+    review = DoctorReview.objects.create(
+        doctor=doctor,
+        patient=request.user,
+        appointment=appointment,
+        rating=rating,
+        comment=comment
+    )
+
+    return Response(DoctorReviewSerializer(review).data, status=201)
+
+
+@api_view(["GET"])
+def get_doctor_reviews(request, doctor_id):
+    try:
+        doctor = Doctor.objects.get(id=doctor_id)
+    except Doctor.DoesNotExist:
+        return Response({"error": "Doctor not found"}, status=404)
+
+    reviews = DoctorReview.objects.filter(doctor=doctor).order_by("-created_at")
+    return Response(DoctorReviewSerializer(reviews, many=True).data)
 class QueueStatusViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = QueueStatusSerializer
     permission_classes = [permissions.IsAuthenticated]

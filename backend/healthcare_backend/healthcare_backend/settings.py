@@ -63,6 +63,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'healthcare_backend.wsgi.application'
 ASGI_APPLICATION = 'healthcare_backend.asgi.application'
 
+
 # Database
 # MySQL Configuration
 DATABASES = {

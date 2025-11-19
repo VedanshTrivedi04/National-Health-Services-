@@ -10,9 +10,12 @@ from .views import (
     DepartmentViewSet,
     MedicalRecordViewSet,
     FamilyMemberViewSet,
-    QueueStatusViewSet
-)
+    live_queue_status,
+    QueueStatusViewSet,
+    get_doctor_reviews,
+    add_doctor_review
 
+)
 router = DefaultRouter()
 
 # ------------------------
@@ -29,5 +32,8 @@ router.register(r'family-members', FamilyMemberViewSet, basename='family-member'
 router.register(r'queue-status', QueueStatusViewSet, basename='queue-status')
 
 urlpatterns = [
+    path("queue/live/", live_queue_status),
+      path("doctors/<int:doctor_id>/reviews/", get_doctor_reviews),
+    path('doctor/<int:doctor_id>/reviews/add/', add_doctor_review, name='doctor-review-add'),
     path('', include(router.urls)),
 ]

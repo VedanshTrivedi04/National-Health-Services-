@@ -1,30 +1,31 @@
 /* =========================================
    ✨ UNIVERSAL RESPONSIVE FIXES ✨
-   ========================================= */
+========================================= */
 
-/* Make all elements respect box sizing */
 * {
     box-sizing: border-box;
 }
 
-/* Ensure body never overflows horizontally */
 body {
     overflow-x: hidden;
+    margin: 0;
 }
 
-/* Responsive text scaling */
+/* Improve text scaling */
 h1, h2, h3, h4, h5, h6 {
     line-height: 1.3;
     word-wrap: break-word;
 }
 
-/* Fix for large containers on small screens */
+/* Container fix */
 .container {
     width: 95%;
+    max-width: 1200px;
+    margin: auto;
     padding: 0 10px;
 }
 
-/* Keep hero section fluid */
+/* HERO Section */
 .hero-content {
     flex-wrap: wrap;
     justify-content: center;
@@ -37,33 +38,45 @@ h1, h2, h3, h4, h5, h6 {
     height: auto;
 }
 
-/* Ensure grid sections are flexible */
+/* GRID FIX */
 .services-grid, .footer-content {
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 20px;
 }
 
-/* Prevent long text overflow in marquee or headings */
+/* Marquee fix */
 .announcement-text marquee {
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
 }
 
-/* Make doctor cards responsive */
+/* Doctor Cards Responsive Slider */
 .doctors-slider {
     display: flex;
-    flex-wrap: nowrap;
     overflow-x: auto;
+    gap: 16px;
+    padding-bottom: 10px;
     scroll-snap-type: x mandatory;
+}
+
+.doctors-slider::-webkit-scrollbar {
+    height: 6px;
+}
+
+.doctors-slider::-webkit-scrollbar-thumb {
+    background: #cfcfcf;
+    border-radius: 10px;
 }
 
 .doctor-card {
     flex: 0 0 auto;
-    scroll-snap-align: start;
     min-width: 230px;
+    max-width: 260px;
+    scroll-snap-align: start;
 }
 
-/* Ensure steps align properly on smaller tablets */
+/* TABLET MEDIA FIX */
 @media (max-width: 992px) {
     .steps {
         flex-direction: column;
@@ -72,7 +85,7 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
-/* Tablet adjustments (max-width: 768px) */
+/* TABLET (768px) */
 @media (max-width: 768px) {
     .navbar {
         flex-wrap: wrap;
@@ -102,15 +115,19 @@ h1, h2, h3, h4, h5, h6 {
     }
 
     .doctor-info h3 {
-        font-size: 16px;
+        font-size: 17px;
     }
 
     .section-title h2 {
         font-size: 24px;
     }
+
+    .queue-box {
+        padding: 18px;
+    }
 }
 
-/* Mobile small screens (max-width: 480px) */
+/* MOBILE (480px) */
 @media (max-width: 480px) {
     .hero {
         padding: 30px 0;
@@ -125,43 +142,233 @@ h1, h2, h3, h4, h5, h6 {
         width: 100%;
     }
 
-    .step-number {
-        width: 60px;
-        height: 60px;
-        font-size: 20px;
+    .doctor-card {
+        min-width: 180px;
     }
 
-    .footer-column h3 {
-        font-size: 16px;
-    }
-
-    .footer-bottom {
-        font-size: 12px;
-    }
-
-    .badge {
+    .token-item {
         flex-direction: column;
-        text-align: center;
+        align-items: flex-start;
+    }
+
+    .review-modal {
+        width: 95%;
+        padding: 18px;
+    }
+
+    .review-input {
+        min-height: 70px;
     }
 }
 
-/* Ultra-small devices (max-width: 360px) */
+/* Ultra-small phones (360px) */
 @media (max-width: 360px) {
+    .doctor-card {
+        min-width: 160px;
+    }
+
     .logo-main {
         font-size: 18px;
     }
+}
 
-    .emblem {
-        width: 45px;
-        height: 45px;
-        font-size: 18px;
-    }
 
-    .doctor-card {
-        min-width: 200px;
-    }
+/* ============================
+   LIVE QUEUE STATUS GLASS UI
+============================= */
 
-    .service-card h3 {
-        font-size: 18px;
-    }
+.queue-box {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    padding: 25px;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 650px;
+    margin: 30px auto;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    animation: fadeIn 0.4s ease-out;
+}
+
+.queue-box h3 {
+    font-size: 24px;
+    font-weight: 800;
+    color: #0b255c;
+}
+
+/* NOW SERVING */
+.current-token {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 20px;
+    background: #eef6ff;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border-left: 5px solid #3b82f6;
+    margin-bottom: 20px;
+}
+
+.current-token strong {
+    font-size: 26px;
+    color: #d00000;
+}
+
+/* Pending Tokens */
+.pending-list h4 {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.token-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    padding: 14px 16px;
+    border-radius: 14px;
+    margin-bottom: 10px;
+    border: 1px solid #dfe3e8;
+    transition: 0.25s ease;
+}
+
+/* Hover */
+.token-item:hover {
+    transform: translateX(6px);
+    background: #f8fbff;
+}
+
+/* Highlighted Token */
+.token-item.highlight {
+    background: #fff8d6;
+    border-color: #facc15;
+    animation: pulseGlow 1.2s infinite;
+}
+
+@keyframes pulseGlow {
+    0% { box-shadow: 0 0 0 rgba(250,204,21,0.5); }
+    50% { box-shadow: 0 0 15px rgba(250,204,21,0.7); }
+    100% { box-shadow: 0 0 0 rgba(250,204,21,0.5); }
+}
+
+/* Text Styling */
+.token-num {
+    font-weight: 700;
+}
+
+.token-name {
+    font-size: 14px;
+    color: #475569;
+    flex-grow: 1;
+}
+
+.eta {
+    background: #e0edff;
+    padding: 6px 10px;
+    border-radius: 50px;
+    font-size: 12px;
+    border: 1px solid #bfdbfe;
+}
+
+
+/* ============================
+   Doctor Review Modal
+=============================== */
+
+.review-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(3px);
+  z-index: 999;
+}
+
+.review-modal {
+  background: #fff;
+  padding: 25px;
+  width: 90%;
+  max-width: 450px;
+  border-radius: 16px;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.15);
+  position: relative;
+  animation: scaleIn 0.25s ease-out;
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.close-btn {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  font-size: 26px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.modal-review-list {
+  max-height: 250px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+
+.review-item {
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  border-left: 4px solid #3b82f6;
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.review-stars {
+  font-weight: bold;
+  color: #f59e0b;
+}
+
+.add-review-title {
+  font-size: 18px;
+  margin-top: 15px;
+}
+
+.review-form {
+  border-top: 1px solid #eee;
+  padding-top: 12px;
+}
+
+.star {
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.star.filled {
+  color: gold;
+}
+
+.review-input {
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.submit-review-btn {
+  width: 100%;
+  padding: 10px;
+  background: #4caf50;
+  color: white;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
 }
