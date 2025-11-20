@@ -18,6 +18,7 @@ import DoctorHeader from './doctorscomponent/components/DoctorHeader'
 import QueueManagement from './doctorscomponent/QueueManagement'
 import LiveSession from './doctorscomponent/LiveSession'
 import Departmentent from './patientcomponent/pages/Departmentent'
+import DoctorQueue from './patientcomponent/pages/DoctorQueue'
 
 function MainLayout() {
   return (
@@ -51,8 +52,9 @@ function App() {
             <Route path="appointment" element={<AppointmentPage />} />
             <Route path="profile" element={<MyProfilePage />} />
             <Route path="login" element={<LoginPage />} />
-            <Route path="signup" element={<SignUpPage />} />
-            <Route path="department" element={<Departmentent />} />
+            <Route path="signup" element={<SignUpPage/>} />
+            <Route path="department" element={<Departmentent/>} />
+            <Route path="/doctorqueue" element={<DoctorQueue/>} />
 
             
 

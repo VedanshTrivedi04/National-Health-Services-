@@ -267,19 +267,59 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
                 )
         
         return attrs
-
-
 class QueueStatusSerializer(serializers.ModelSerializer):
-    """Queue status serializer for live updates"""
     doctor_name = serializers.CharField(source='doctor.full_name', read_only=True)
+    pending_tokens = serializers.SerializerMethodField()
 
     class Meta:
         model = QueueStatus
         fields = [
             'id', 'doctor', 'doctor_name', 'appointment_date',
             'current_token', 'total_tokens', 'completed_tokens',
-            'average_time_per_patient', 'last_updated'
+            'average_time_per_patient', 'last_updated',
+            'pending_tokens'
         ]
+
+    def get_pending_tokens(self, obj):
+        # all future tokens after completed ones
+        appointments = Appointment.objects.filter(
+            doctor=obj.doctor,
+            appointment_date=obj.appointment_date,
+            status='scheduled'
+        ).order_by('queue_position')
+
+        return [
+            {
+                "token_number": a.token_number,
+                "patient_name": a.patient.full_name,
+                "queue_position": a.queue_position,
+            }
+            for a in appointments
+        ]
+
+    def get_pending_tokens(self, obj):
+        """Return all tokens that are NOT served yet"""
+
+        # Fetch appointments for this doctor & date
+        appointments = Appointment.objects.filter(
+            doctor=obj.doctor,
+            appointment_date=obj.appointment_date
+        ).exclude(
+            status__in=['completed', 'cancelled', 'no_show']
+        ).order_by('queue_position')
+
+        pending_list = []
+
+        for ap in appointments:
+            pending_list.append({
+                "token_number": ap.token_number,
+                "patient_name": ap.patient.full_name,
+                "queue_position": ap.queue_position,
+                "status": ap.status,
+            })
+
+        return pending_list
+
 
 
 # ==================== Medical Record Serializers ====================

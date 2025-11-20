@@ -77,7 +77,7 @@ function Header() {
               <li><NavLink to="/appointment">Book Appointment</NavLink></li>
               <li><NavLink to="/profile">Profile</NavLink></li>
               <li><NavLink to="/department">Departments</NavLink></li>
-              <li><NavLink to="/contact">Contact Us</NavLink></li>
+              <li><NavLink to="/doctorqueue">Live Queue</NavLink></li>
             </ul>
 
             {/* DESKTOP AUTH */}
@@ -115,7 +115,7 @@ function Header() {
             <li><NavLink to="/appointment" onClick={closeMobileMenu}>Book Appointment</NavLink></li>
             <li><NavLink to="/profile" onClick={closeMobileMenu}>Profile</NavLink></li>
             <li><NavLink to="/department" onClick={closeMobileMenu}>Departments</NavLink></li>
-            <li><NavLink to="/contact" onClick={closeMobileMenu}>Contact Us</NavLink></li>
+            <li><NavLink to="/doctorqueue" onClick={closeMobileMenu}>Live Queue</NavLink></li>
           </ul>
 
           <div className="mobile-auth">

@@ -29,7 +29,7 @@ router.register(r'appointments', AppointmentViewSet, basename='appointment')
 router.register(r'departments', DepartmentViewSet, basename='department')
 router.register(r'medical-records', MedicalRecordViewSet, basename='medical-record')
 router.register(r'family-members', FamilyMemberViewSet, basename='family-member')
-router.register(r'queue-status', QueueStatusViewSet, basename='queue-status')
+router.register(r'queue/status', QueueStatusViewSet, basename='queue-status')
 
 urlpatterns = [
     path("queue/live/", live_queue_status),

@@ -5,7 +5,7 @@ import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import apiService from '../../services/api';
 
-const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 const AppointmentPage = () => {
     const { doctors, departments, fetchDoctors, fetchDepartments, isLoading } = useData();
@@ -21,7 +21,7 @@ const AppointmentPage = () => {
     const [selectedDoctor, setSelectedDoctor] = useState(null);
     const [selectedDate, setSelectedDate] = useState(null);
 
-    const [assignedTime, setAssignedTime] = useState(null);
+    const [assignedTime, setAssignedTime] = useState(null); // values like "09:00"
     const [token, setToken] = useState(null);
 
     const [showPopup, setShowPopup] = useState(false);
@@ -47,10 +47,9 @@ const AppointmentPage = () => {
                 name: user.full_name,
                 email: user.email,
                 phone: user.phone,
-                aadhaar: user.aadhaar_number
+                aadhaar: user?.aadhaar_number || ''
             });
         }
-
         fetchDepartments();
         fetchDoctors();
     }, [isAuthenticated, user, fetchDepartments, fetchDoctors]);
@@ -63,34 +62,35 @@ const AppointmentPage = () => {
         setSelectedDoctor(null);
 
         if (method === 'doctor') {
+            // make sure doctors list is loaded
             await fetchDoctors();
         }
     };
 
     const handleSelectDepartment = async (departmentId) => {
         setSelectedDepartment(departmentId);
-
-        const fetchedDoctors = await fetchDoctors(departmentId);
-        if (fetchedDoctors.length > 0) {
-            setSelectedDoctor(fetchedDoctors[0]);
+        // fetch doctors filtered (DataContext returns filtered but doesn't clobber cache)
+        const filtered = await fetchDoctors(departmentId);
+        if (filtered && filtered.length > 0) {
+            setSelectedDoctor(filtered[0]);
+        } else {
+            setSelectedDoctor(null);
         }
     };
 
     const handleSelectDoctor = (doctorId) => {
-    const doctor = doctors.find(d => d.id === doctorId);
+        const doctor = doctors.find(d => Number(d.id) === Number(doctorId));
+        setSelectedDoctor(doctor || null);
 
-    setSelectedDoctor(doctor);
-
-    // 🔥 ALWAYS auto-assign department based on doctor
-    if (doctor && doctor.department && doctor.department.id) {
-        setSelectedDepartment(doctor.department.id);
-    } else {
-        // fallback in case department object is missing
-        console.warn("Doctor has no department assigned");
-        setSelectedDepartment(null);
-    }
-};
-
+        // Auto assign department using the available fields:
+        const deptId = doctor?.department_id ?? doctor?.department?.id ?? null;
+        if (deptId) {
+            setSelectedDepartment(Number(deptId));
+        } else {
+            console.warn('Doctor has no department assigned', doctor);
+            setSelectedDepartment(null);
+        }
+    };
 
     if (!isAuthenticated) {
         return (
@@ -105,18 +105,21 @@ const AppointmentPage = () => {
         );
     }
 
+    // Fetch available slots from backend (should accept doctor id + date)
     const fetchAvailableSlots = async (doctorId, date) => {
         if (!doctorId || !date) {
             setAvailableSlots([]);
             return;
         }
-
         setLoadingSlots(true);
         try {
             const dateStr = date.toISOString().split('T')[0];
             const response = await apiService.getAvailableSlots(doctorId, dateStr);
-            setAvailableSlots(response.available_slots || []);
-        } catch {
+            // Normalize response shape
+            const slots = response?.available_slots ?? response?.results ?? response?.slots ?? [];
+            setAvailableSlots(Array.isArray(slots) ? slots : []);
+        } catch (err) {
+            console.error('Failed to fetch slots:', err);
             setAvailableSlots([]);
         } finally {
             setLoadingSlots(false);
@@ -125,7 +128,9 @@ const AppointmentPage = () => {
 
     useEffect(() => {
         if (availableSlots.length > 0) {
-            setAssignedTime(availableSlots[0].value);
+            // ensure assignedTime exists in one of slot.value or slot.time
+            const first = availableSlots[0];
+            setAssignedTime(first?.value ?? first?.time ?? null);
         } else {
             setAssignedTime(null);
         }
@@ -134,11 +139,14 @@ const AppointmentPage = () => {
     useEffect(() => {
         if (selectedDate && selectedDoctor?.id) {
             fetchAvailableSlots(selectedDoctor.id, selectedDate);
+        } else {
+            setAvailableSlots([]);
         }
     }, [selectedDate, selectedDoctor]);
 
     const handleSelectDate = (date) => {
         setSelectedDate(date);
+        // fetching slots is handled by useEffect (depends on selectedDoctor too)
     };
 
     const handlePrevMonth = () => {
@@ -168,58 +176,70 @@ const AppointmentPage = () => {
         setCurrentStep(4);
     };
 
+    // Confirm booking
     const confirmBooking = async () => {
         if (!selectedDoctor || !selectedDate) {
             alert('Missing required fields');
             return;
         }
 
-        const departmentId = selectedDoctor.department?.id || selectedDepartment;
+        // choose department id in this order: department_id field, nested department object, selectedDepartment fallback
+        const departmentId = selectedDoctor?.department_id ?? selectedDoctor?.department?.id ?? selectedDepartment;
+        if (!departmentId) {
+            console.warn('No department id resolved for doctor; backend may reject booking');
+        }
+
+        // Backend expects time as HH:MM:SS or TimeField; assignedTime is "HH:MM" usually — append :00
+        const timeSlotPayload = assignedTime ? (assignedTime.length === 5 ? `${assignedTime}:00` : assignedTime) : null;
 
         const bookingData = {
             doctor: selectedDoctor.id,
             department: departmentId,
             appointment_date: selectedDate.toISOString().split('T')[0],
-            time_slot: assignedTime ? `${assignedTime}:00` : null,
+            time_slot: timeSlotPayload,
             reason: 'Consultation',
-            booking_type: selectedMethod,
+            booking_type: selectedMethod,      // ensure not null
             is_for_self: selectedPatient === 'yourself',
             patient_relation: selectedPatient === 'someoneElse' ? patientRelation : '',
         };
 
         setIsBooking(true);
         try {
+            // debug payload
+            console.log('Creating appointment payload ->', bookingData);
+
             const response = await apiService.createAppointment(bookingData);
-            setToken(response.token_number);
+
+            // response may be object or wrapped; normalize
+            const payload = response?.data ?? response;
+            console.log('Appointment created response:', payload);
+
+            setToken(payload.token_number ?? payload.token ?? null);
             setShowPopup(true);
-        } catch (error){
-            console.log("🔥 FULL BACKEND ERROR:", error?.response?.data);
-    alert("Failed to create appointment.");
+        } catch (error) {
+            // show server validation errors if any
+            const serverData = error?.response?.data ?? error?.message ?? error;
+            console.error('🔥 FULL BACKEND ERROR:', serverData);
+            alert('Failed to create appointment. See console for details.');
         } finally {
             setIsBooking(false);
         }
     };
 
+    // calendar grid
     const calendarGrid = useMemo(() => {
         const firstDay = new Date(currentYear, currentMonth, 1).getDay();
         const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
+        const today = new Date(); today.setHours(0,0,0,0);
         const grid = [];
 
-        ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(day =>
-            grid.push(<div key={day} className="calendar-day">{day}</div>)
-        );
+        ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(day => grid.push(<div key={day} className="calendar-day">{day}</div>));
 
-        for (let i = 0; i < firstDay; i++) {
-            grid.push(<div key={`empty-${i}`} className="calendar-date"></div>);
-        }
+        for (let i = 0; i < firstDay; i++) grid.push(<div key={`empty-${i}`} className="calendar-date"></div>);
 
         for (let i = 1; i <= daysInMonth; i++) {
             const dateObj = new Date(currentYear, currentMonth, i);
             const isPast = dateObj < today;
-
             grid.push(
                 <div
                     key={i}
@@ -230,30 +250,26 @@ const AppointmentPage = () => {
                 </div>
             );
         }
-
         return grid;
     }, [currentMonth, currentYear, selectedDate]);
 
     const summaryDateTime = useMemo(() => {
         if (selectedDate && assignedTime) {
-            const slot = availableSlots.find(s => s.value === assignedTime);
-            return `${selectedDate.toDateString()} at ${slot?.display}`;
+            const slot = availableSlots.find(s => (s.value ?? s.time) === assignedTime);
+            return `${selectedDate.toDateString()} at ${slot?.display ?? slot?.label ?? assignedTime}`;
         }
         return '';
     }, [selectedDate, assignedTime, availableSlots]);
 
     return (
         <div className="appointment-section active">
-
             {/* STEP 1 */}
             <div className={`step-container ${currentStep === 1 ? 'active' : ''}`}>
                 <h2>Select Patient</h2>
-
                 <div className="patient-options">
                     <div className={`patient-option ${selectedPatient === 'yourself' ? 'active' : ''}`} onClick={() => handleSelectPatient('yourself')}>
                         <h3>Yourself</h3>
                     </div>
-
                     <div className={`patient-option ${selectedPatient === 'someoneElse' ? 'active' : ''}`} onClick={() => handleSelectPatient('someoneElse')}>
                         <h3>Someone Else</h3>
                     </div>
@@ -278,20 +294,16 @@ const AppointmentPage = () => {
             {/* STEP 2 */}
             <div className={`step-container ${currentStep === 2 ? 'active' : ''}`}>
                 <h2>Select Booking Method</h2>
-
                 <div className="booking-methods">
                     <div className={`booking-method ${selectedMethod === 'disease' ? 'active' : ''}`} onClick={() => handleSelectBookingMethod('disease')}>
                         <h3>By Disease</h3>
                     </div>
-
                     <div className={`booking-method ${selectedMethod === 'doctor' ? 'active' : ''}`} onClick={() => handleSelectBookingMethod('doctor')}>
                         <h3>By Doctor</h3>
                     </div>
                 </div>
 
-                {/* BACK BUTTON */}
                 <button className="btn btn-secondary" onClick={() => setCurrentStep(1)}>Back</button>
-
                 <button className="btn btn-primary" onClick={nextToStep3}>Next</button>
             </div>
 
@@ -304,11 +316,7 @@ const AppointmentPage = () => {
                         {selectedMethod === 'disease' && (
                             <div className="doctor-list">
                                 {departments.map(dept => (
-                                    <div
-                                        key={dept.id}
-                                        className={`doctor-list-item ${selectedDepartment === dept.id ? 'active' : ''}`}
-                                        onClick={() => handleSelectDepartment(dept.id)}
-                                    >
+                                    <div key={dept.id} className={`doctor-list-item ${selectedDepartment === dept.id ? 'active' : ''}`} onClick={() => handleSelectDepartment(dept.id)}>
                                         <h3>{dept.name}</h3>
                                     </div>
                                 ))}
@@ -318,11 +326,7 @@ const AppointmentPage = () => {
                         {selectedMethod === 'doctor' && (
                             <div className="doctor-list">
                                 {doctors.map(doc => (
-                                    <div
-                                        key={doc.id}
-                                        className={`doctor-list-item ${selectedDoctor?.id === doc.id ? 'active' : ''}`}
-                                        onClick={() => handleSelectDoctor(doc.id)}
-                                    >
+                                    <div key={doc.id} className={`doctor-list-item ${selectedDoctor?.id === doc.id ? 'active' : ''}`} onClick={() => handleSelectDoctor(doc.id)}>
                                         <h3>{doc.full_name}</h3>
                                         <p>{doc.specialty}</p>
                                     </div>
@@ -332,9 +336,7 @@ const AppointmentPage = () => {
                     </>
                 )}
 
-                {/* BACK BUTTON */}
                 <button className="btn btn-secondary" onClick={() => setCurrentStep(2)}>Back</button>
-
                 <button className="btn btn-primary" onClick={nextToStep4}>Next</button>
             </div>
 
@@ -351,24 +353,18 @@ const AppointmentPage = () => {
                     <div className="calendar-grid">{calendarGrid}</div>
                 </div>
 
-                {selectedDate && (
-                    <p><strong>Selected Date:</strong> {selectedDate.toDateString()}</p>
-                )}
-
+                {selectedDate && <p><strong>Selected Date:</strong> {selectedDate.toDateString()}</p>}
                 {loadingSlots && <p>Loading available slots…</p>}
 
                 {!loadingSlots && assignedTime && (
                     <div className="auto-slot-box">
                         <h3>Assigned Time Slot:</h3>
-                        <p><strong>{availableSlots.find(s => s.value === assignedTime)?.display}</strong></p>
+                        <p><strong>{availableSlots.find(s => (s.value ?? s.time) === assignedTime)?.display ?? assignedTime}</strong></p>
                     </div>
                 )}
 
-                {!loadingSlots && !assignedTime && selectedDate && (
-                    <p>No slots available for this date. Choose another date.</p>
-                )}
+                {!loadingSlots && !assignedTime && selectedDate && <p>No slots available for this date. Choose another date.</p>}
 
-                {/* BACK BUTTON */}
                 <button className="btn btn-secondary" onClick={() => setCurrentStep(3)}>Back</button>
 
                 <button className="btn btn-primary" onClick={confirmBooking} disabled={isBooking || !selectedDate}>
@@ -376,31 +372,25 @@ const AppointmentPage = () => {
                 </button>
             </div>
 
-            {/* Confirmation Popup */}
+            {/* Confirmation */}
             {showPopup && (
                 <div className="confirmation-popup active">
                     <div className="confirmation-content">
-
                         <div className="confirmation-title">Appointment Confirmed!</div>
-
                         <p><strong>Doctor:</strong> {selectedDoctor?.full_name}</p>
                         <p><strong>Date & Time:</strong> {summaryDateTime}</p>
-
                         <div className="token-number">{token}</div>
 
-                        <button
-                            className="btn btn-primary"
-                            onClick={() => {
-                                setShowPopup(false);
-                                window.location.href = "/patient/dashboard";
-                            }}
-                        >
+                        <button className="btn btn-primary" onClick={() => {
+                            setShowPopup(false);
+                            // redirect to patient dashboard
+                            window.location.href = "/patient/dashboard";
+                        }}>
                             Close
                         </button>
                     </div>
                 </div>
             )}
-
         </div>
     );
 };

@@ -487,15 +487,25 @@ def get_doctor_reviews(request, doctor_id):
 
     reviews = DoctorReview.objects.filter(doctor=doctor).order_by("-created_at")
     return Response(DoctorReviewSerializer(reviews, many=True).data)
+
+
+from rest_framework.pagination import PageNumberPagination
+
+class NoPagination(PageNumberPagination):
+    page_size = None
+
 class QueueStatusViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = QueueStatusSerializer
+    pagination_class = NoPagination
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         doctor_id = self.request.query_params.get('doctor')
-        appointment_date = self.request.query_params.get('date', timezone.now().date())
+        date = self.request.query_params.get('date', timezone.now().date())
 
-        queryset = QueueStatus.objects.filter(appointment_date=appointment_date)
+        qs = QueueStatus.objects.filter(appointment_date=date)
         if doctor_id:
-            queryset = queryset.filter(doctor_id=doctor_id)
-        return queryset
+            qs = qs.filter(doctor_id=doctor_id)
+        return qs
+
+
