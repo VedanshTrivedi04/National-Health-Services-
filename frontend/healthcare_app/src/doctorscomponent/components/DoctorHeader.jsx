@@ -34,6 +34,7 @@ function DoctorHeader() {
     try {
       await logout();
       setIsMobileNavActive(false);
+      window.location.href = "/patient/dashboard"
     } catch (err) {
       console.error('Logout error:', err);
     }
@@ -113,7 +114,8 @@ function DoctorHeader() {
             <li><Link to="/doctor/profile">Profile</Link></li>
             <li><Link to="/doctor/cabinet">Cabin Display</Link></li>
             {isAuthenticated && (
-              <li className="mobile-logout" onClick={handleLogout}>Logout</li>
+              <li className="mobile-logout" onClick={handleLogout} >Logout</li>
+              
             )}
           </ul>
         </div>

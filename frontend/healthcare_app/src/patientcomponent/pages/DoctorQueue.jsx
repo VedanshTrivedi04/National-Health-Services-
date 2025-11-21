@@ -93,12 +93,21 @@ const DoctorQueue = () => {
               <h2>{queueData.doctor_name}</h2>
 
               <div className="queue-stats">
-                <div className="stat-item">
-                  <label>Now Serving</label>
-                  <span className="current-token">
-                    {queueData.current_token || "—"}
-                  </span>
-                </div>
+                <div className="queue-stats">
+  <div className="stat-item">
+    <label>Now Serving</label>
+
+    {queueData.status === "in_progress" ? (
+      <span className="current-token">
+        {queueData.current_token || "—"}
+      </span>
+    ) : (
+      <span className="current-token">Not Started</span>
+    )}
+  </div>
+</div>
+
+                
 
                 <div className="stat-item">
                   <label>Total Booked</label>
