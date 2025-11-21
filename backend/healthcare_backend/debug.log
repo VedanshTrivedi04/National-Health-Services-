@@ -25704,3 +25704,148 @@ INFO 2025-11-19 23:40:52,503 runserver [mHTTP GET /api/queue/status/?doctor=2&d
 INFO 2025-11-19 23:40:55,537 runserver [mHTTP GET /api/queue/status/?doctor=2&date=2025-11-19 200 [0.03, 127.0.0.1:65288][0m
 INFO 2025-11-19 23:40:58,487 runserver [mHTTP GET /api/queue/status/?doctor=2&date=2025-11-19 200 [0.04, 127.0.0.1:65288][0m
 INFO 2025-11-19 23:41:01,492 runserver [mHTTP GET /api/queue/status/?doctor=2&date=2025-11-19 200 [0.03, 127.0.0.1:65288][0m
+INFO 2025-11-20 09:22:38,504 autoreload Watching for file changes with StatReloader
+INFO 2025-11-20 09:24:14,919 runserver [mHTTP OPTIONS /api/doctor/ 200 [0.01, 127.0.0.1:53799][0m
+INFO 2025-11-20 09:24:14,921 runserver [mHTTP OPTIONS /api/departments/ 200 [0.01, 127.0.0.1:53800][0m
+INFO 2025-11-20 09:24:14,923 runserver [mHTTP OPTIONS /api/departments/ 200 [0.01, 127.0.0.1:53801][0m
+INFO 2025-11-20 09:24:14,940 runserver [mHTTP OPTIONS /api/doctor/ 200 [0.01, 127.0.0.1:53801][0m
+INFO 2025-11-20 09:24:14,943 runserver [mHTTP OPTIONS /api/doctor/ 200 [0.01, 127.0.0.1:53800][0m
+INFO 2025-11-20 09:24:14,949 runserver [mHTTP OPTIONS /api/doctor/ 200 [0.01, 127.0.0.1:53799][0m
+INFO 2025-11-20 09:24:14,953 runserver [mHTTP OPTIONS /api/departments/ 200 [0.01, 127.0.0.1:53803][0m
+INFO 2025-11-20 09:24:14,955 runserver [mHTTP OPTIONS /api/departments/ 200 [0.01, 127.0.0.1:53805][0m
+WARNING 2025-11-20 09:24:15,103 log Unauthorized: /api/doctor/
+WARNING 2025-11-20 09:24:15,103 log Unauthorized: /api/departments/
+WARNING 2025-11-20 09:24:15,105 runserver [31;1mHTTP GET /api/doctor/ 401 [0.05, 127.0.0.1:53805][0m
+WARNING 2025-11-20 09:24:15,107 runserver [31;1mHTTP GET /api/departments/ 401 [0.05, 127.0.0.1:53803][0m
+WARNING 2025-11-20 09:24:16,132 log Unauthorized: /api/departments/
+WARNING 2025-11-20 09:24:16,135 runserver [31;1mHTTP GET /api/departments/ 401 [0.02, 127.0.0.1:53805][0m
+WARNING 2025-11-20 09:24:16,133 log Unauthorized: /api/doctor/
+WARNING 2025-11-20 09:24:16,139 runserver [31;1mHTTP GET /api/doctor/ 401 [0.02, 127.0.0.1:53803][0m
+WARNING 2025-11-20 09:24:16,282 log Unauthorized: /api/departments/
+WARNING 2025-11-20 09:24:16,282 log Unauthorized: /api/doctor/
+WARNING 2025-11-20 09:24:16,284 runserver [31;1mHTTP GET /api/departments/ 401 [0.02, 127.0.0.1:53803][0m
+WARNING 2025-11-20 09:24:16,286 runserver [31;1mHTTP GET /api/doctor/ 401 [0.02, 127.0.0.1:53805][0m
+WARNING 2025-11-20 09:24:16,438 log Unauthorized: /api/departments/
+WARNING 2025-11-20 09:24:16,440 log Unauthorized: /api/doctor/
+WARNING 2025-11-20 09:24:16,442 runserver [31;1mHTTP GET /api/departments/ 401 [0.02, 127.0.0.1:53803][0m
+WARNING 2025-11-20 09:24:16,444 runserver [31;1mHTTP GET /api/doctor/ 401 [0.02, 127.0.0.1:53805][0m
+INFO 2025-11-20 09:40:41,340 runserver [mHTTP OPTIONS /api/departments/ 200 [0.02, 127.0.0.1:51263][0m
+INFO 2025-11-20 09:40:41,343 runserver [mHTTP OPTIONS /api/doctor/ 200 [0.03, 127.0.0.1:51262][0m
+INFO 2025-11-20 09:40:41,346 runserver [mHTTP OPTIONS /api/departments/ 200 [0.03, 127.0.0.1:51264][0m
+INFO 2025-11-20 09:40:41,349 runserver [mHTTP OPTIONS /api/departments/ 200 [0.03, 127.0.0.1:51265][0m
+INFO 2025-11-20 09:40:41,351 runserver [mHTTP OPTIONS /api/doctor/ 200 [0.03, 127.0.0.1:51266][0m
+INFO 2025-11-20 09:40:41,354 runserver [mHTTP OPTIONS /api/departments/ 200 [0.02, 127.0.0.1:51267][0m
+INFO 2025-11-20 09:40:41,358 runserver [mHTTP OPTIONS /api/doctor/ 200 [0.02, 127.0.0.1:51268][0m
+INFO 2025-11-20 09:40:41,362 runserver [mHTTP OPTIONS /api/doctor/ 200 [0.02, 127.0.0.1:51269][0m
+WARNING 2025-11-20 09:40:41,448 log Unauthorized: /api/departments/
+WARNING 2025-11-20 09:40:41,450 runserver [31;1mHTTP GET /api/departments/ 401 [0.03, 127.0.0.1:51269][0m
+WARNING 2025-11-20 09:40:41,461 log Unauthorized: /api/doctor/
+WARNING 2025-11-20 09:40:41,462 runserver [31;1mHTTP GET /api/doctor/ 401 [0.02, 127.0.0.1:51268][0m
+WARNING 2025-11-20 09:40:41,896 log Unauthorized: /api/doctor/
+WARNING 2025-11-20 09:40:41,897 runserver [31;1mHTTP GET /api/doctor/ 401 [0.02, 127.0.0.1:51269][0m
+WARNING 2025-11-20 09:40:41,898 log Unauthorized: /api/departments/
+WARNING 2025-11-20 09:40:41,900 runserver [31;1mHTTP GET /api/departments/ 401 [0.03, 127.0.0.1:51268][0m
+WARNING 2025-11-20 09:40:42,021 log Unauthorized: /api/departments/
+WARNING 2025-11-20 09:40:42,021 log Unauthorized: /api/doctor/
+WARNING 2025-11-20 09:40:42,023 runserver [31;1mHTTP GET /api/departments/ 401 [0.02, 127.0.0.1:51268][0m
+WARNING 2025-11-20 09:40:42,030 runserver [31;1mHTTP GET /api/doctor/ 401 [0.03, 127.0.0.1:51269][0m
+WARNING 2025-11-20 09:40:42,205 log Unauthorized: /api/departments/
+WARNING 2025-11-20 09:40:42,206 log Unauthorized: /api/doctor/
+WARNING 2025-11-20 09:40:42,208 runserver [31;1mHTTP GET /api/departments/ 401 [0.03, 127.0.0.1:51268][0m
+WARNING 2025-11-20 09:40:42,210 runserver [31;1mHTTP GET /api/doctor/ 401 [0.04, 127.0.0.1:51269][0m
+INFO 2025-11-20 09:40:53,653 runserver [mHTTP OPTIONS /api/auth/login/ 200 [0.00, 127.0.0.1:51269][0m
+WARNING 2025-11-20 09:40:54,960 log Unauthorized: /api/auth/login/
+WARNING 2025-11-20 09:40:54,962 runserver [31;1mHTTP POST /api/auth/login/ 401 [1.21, 127.0.0.1:51269][0m
+WARNING 2025-11-20 09:41:15,924 log Unauthorized: /api/auth/login/
+WARNING 2025-11-20 09:41:15,926 runserver [31;1mHTTP POST /api/auth/login/ 401 [1.10, 127.0.0.1:51269][0m
+INFO 2025-11-20 09:41:37,914 runserver [mHTTP POST /api/auth/login/ 200 [1.16, 127.0.0.1:51269][0m
+INFO 2025-11-20 09:41:38,090 runserver [mHTTP GET /api/departments/ 200 [0.09, 127.0.0.1:51269][0m
+INFO 2025-11-20 09:41:38,100 runserver [mHTTP GET /api/doctor/ 200 [0.09, 127.0.0.1:51268][0m
+INFO 2025-11-20 09:41:38,548 runserver [mHTTP GET /api/departments/ 200 [0.04, 127.0.0.1:51268][0m
+INFO 2025-11-20 09:41:39,252 runserver [mHTTP OPTIONS /api/doctor/dashboard/ 200 [0.01, 127.0.0.1:51268][0m
+INFO 2025-11-20 09:41:39,254 runserver [mHTTP OPTIONS /api/doctor/dashboard/ 200 [0.01, 127.0.0.1:51269][0m
+INFO 2025-11-20 09:41:39,436 runserver [mHTTP GET /api/doctor/dashboard/ 200 [0.09, 127.0.0.1:51269][0m
+INFO 2025-11-20 09:41:39,771 runserver [mHTTP GET /api/doctor/dashboard/ 200 [0.05, 127.0.0.1:51269][0m
+INFO 2025-11-20 09:53:09,654 runserver [mHTTP GET /api/departments/ 200 [0.08, 127.0.0.1:53063][0m
+INFO 2025-11-20 09:53:09,656 runserver [mHTTP GET /api/doctor/dashboard/ 200 [0.08, 127.0.0.1:53062][0m
+INFO 2025-11-20 09:53:09,662 runserver [mHTTP GET /api/doctor/ 200 [0.09, 127.0.0.1:53060][0m
+INFO 2025-11-20 09:53:10,084 runserver [mHTTP GET /api/doctor/dashboard/ 200 [0.05, 127.0.0.1:53060][0m
+INFO 2025-11-20 09:53:10,131 runserver [mHTTP GET /api/doctor/ 200 [0.06, 127.0.0.1:53063][0m
+INFO 2025-11-20 09:53:10,135 runserver [mHTTP GET /api/departments/ 200 [0.06, 127.0.0.1:53062][0m
+INFO 2025-11-20 09:53:10,285 runserver [mHTTP GET /api/doctor/ 200 [0.05, 127.0.0.1:53063][0m
+INFO 2025-11-20 09:53:10,289 runserver [mHTTP GET /api/departments/ 200 [0.06, 127.0.0.1:53062][0m
+INFO 2025-11-20 09:53:10,420 runserver [mHTTP GET /api/departments/ 200 [0.04, 127.0.0.1:53062][0m
+INFO 2025-11-20 09:53:10,550 runserver [mHTTP GET /api/departments/ 200 [0.04, 127.0.0.1:53062][0m
+INFO 2025-11-20 09:53:10,671 runserver [mHTTP GET /api/departments/ 200 [0.03, 127.0.0.1:53062][0m
+INFO 2025-11-20 09:55:43,110 runserver [mHTTP GET /api/doctor/dashboard/ 200 [0.04, 127.0.0.1:64510][0m
+INFO 2025-11-20 09:56:01,772 runserver [mHTTP GET /api/doctor/dashboard/ 200 [0.04, 127.0.0.1:64510][0m
+INFO 2025-11-20 09:56:01,869 runserver [mHTTP OPTIONS /api/doctor/4/ 200 [0.00, 127.0.0.1:61155][0m
+INFO 2025-11-20 09:56:01,898 runserver [mHTTP GET /api/doctor/dashboard/ 200 [0.04, 127.0.0.1:64510][0m
+INFO 2025-11-20 09:56:01,984 runserver [mHTTP GET /api/doctor/4/ 200 [0.03, 127.0.0.1:64510][0m
+INFO 2025-11-20 09:56:03,110 runserver [mHTTP GET /api/doctor/4/ 200 [0.04, 127.0.0.1:64510][0m
+INFO 2025-11-20 09:58:32,132 runserver [mHTTP OPTIONS /api/doctor/appointments/?date=2025-11-20 200 [0.01, 127.0.0.1:64717][0m
+INFO 2025-11-20 09:58:32,134 runserver [mHTTP OPTIONS /api/doctor/appointments/?date=2025-11-20 200 [0.01, 127.0.0.1:64718][0m
+INFO 2025-11-20 09:58:32,176 runserver [mHTTP GET /api/doctor/ 200 [0.05, 127.0.0.1:64716][0m
+INFO 2025-11-20 09:58:32,246 runserver [mHTTP GET /api/doctor/appointments/?date=2025-11-20 200 [0.03, 127.0.0.1:64716][0m
+INFO 2025-11-20 09:58:32,724 runserver [mHTTP GET /api/doctor/ 200 [0.05, 127.0.0.1:64716][0m
+INFO 2025-11-20 09:58:33,330 runserver [mHTTP GET /api/doctor/appointments/?date=2025-11-20 200 [0.03, 127.0.0.1:64716][0m
+INFO 2025-11-20 09:58:42,766 runserver [mHTTP GET /api/doctor/dashboard/ 200 [0.05, 127.0.0.1:64716][0m
+INFO 2025-11-20 09:58:43,155 runserver [mHTTP GET /api/doctor/dashboard/ 200 [0.04, 127.0.0.1:64716][0m
+INFO 2025-11-20 09:58:44,246 runserver [mHTTP GET /api/doctor/appointments/?date=2025-11-20 200 [0.04, 127.0.0.1:64718][0m
+INFO 2025-11-20 09:58:44,249 runserver [mHTTP GET /api/doctor/ 200 [0.05, 127.0.0.1:64716][0m
+INFO 2025-11-20 09:58:44,372 runserver [mHTTP GET /api/doctor/appointments/?date=2025-11-20 200 [0.04, 127.0.0.1:64716][0m
+INFO 2025-11-20 09:58:44,374 runserver [mHTTP GET /api/doctor/ 200 [0.04, 127.0.0.1:64718][0m
+INFO 2025-11-20 09:58:48,965 runserver [mHTTP GET /api/doctor/dashboard/ 200 [0.05, 127.0.0.1:64718][0m
+INFO 2025-11-20 09:58:49,078 runserver [mHTTP GET /api/doctor/dashboard/ 200 [0.04, 127.0.0.1:64718][0m
+INFO 2025-11-20 09:58:50,626 runserver [mHTTP GET /api/doctor/dashboard/ 200 [0.04, 127.0.0.1:64718][0m
+INFO 2025-11-20 09:58:50,756 runserver [mHTTP GET /api/doctor/4/ 200 [0.05, 127.0.0.1:64716][0m
+INFO 2025-11-20 09:58:50,758 runserver [mHTTP GET /api/doctor/dashboard/ 200 [0.05, 127.0.0.1:64718][0m
+INFO 2025-11-20 09:58:51,216 runserver [mHTTP GET /api/doctor/4/ 200 [0.04, 127.0.0.1:64718][0m
+INFO 2025-11-20 09:58:51,993 runserver [mHTTP GET /api/doctor/dashboard/ 200 [0.05, 127.0.0.1:64718][0m
+INFO 2025-11-20 09:58:52,122 runserver [mHTTP GET /api/doctor/appointments/?date=2025-11-20 200 [0.05, 127.0.0.1:64718][0m
+INFO 2025-11-20 09:58:52,130 runserver [mHTTP GET /api/doctor/dashboard/ 200 [0.05, 127.0.0.1:64716][0m
+INFO 2025-11-20 09:58:52,237 runserver [mHTTP GET /api/doctor/appointments/?date=2025-11-20 200 [0.03, 127.0.0.1:64716][0m
+INFO 2025-11-20 09:58:54,971 runserver [mHTTP GET /api/doctor/dashboard/ 200 [0.04, 127.0.0.1:64716][0m
+INFO 2025-11-20 09:58:55,071 runserver [mHTTP GET /api/doctor/appointments/?date=2025-11-20 200 [0.02, 127.0.0.1:64716][0m
+INFO 2025-11-20 09:58:55,402 runserver [mHTTP GET /api/doctor/appointments/?date=2025-11-20 200 [0.04, 127.0.0.1:64718][0m
+INFO 2025-11-20 09:58:55,407 runserver [mHTTP GET /api/doctor/ 200 [0.05, 127.0.0.1:64716][0m
+INFO 2025-11-20 09:58:55,515 runserver [mHTTP GET /api/doctor/appointments/?date=2025-11-20 200 [0.03, 127.0.0.1:64716][0m
+INFO 2025-11-20 09:58:55,539 runserver [mHTTP GET /api/doctor/ 200 [0.04, 127.0.0.1:64718][0m
+INFO 2025-11-20 10:02:22,361 runserver [mHTTP GET /api/doctor/dashboard/ 200 [0.04, 127.0.0.1:57207][0m
+INFO 2025-11-20 10:02:22,709 runserver [mHTTP GET /api/doctor/dashboard/ 200 [0.04, 127.0.0.1:57207][0m
+INFO 2025-11-21 11:16:20,194 autoreload Watching for file changes with StatReloader
+INFO 2025-11-21 11:17:31,788 autoreload Watching for file changes with StatReloader
+INFO 2025-11-21 11:25:28,746 runserver [mHTTP OPTIONS /api/departments/ 200 [0.01, 127.0.0.1:49176][0m
+INFO 2025-11-21 11:25:28,747 runserver [mHTTP OPTIONS /api/doctor/ 200 [0.00, 127.0.0.1:64964][0m
+INFO 2025-11-21 11:25:28,748 runserver [mHTTP OPTIONS /api/departments/ 200 [0.00, 127.0.0.1:61883][0m
+INFO 2025-11-21 11:25:28,749 runserver [mHTTP OPTIONS /api/doctor/ 200 [0.01, 127.0.0.1:65101][0m
+INFO 2025-11-21 11:25:28,750 runserver [mHTTP OPTIONS /api/departments/ 200 [0.01, 127.0.0.1:62009][0m
+INFO 2025-11-21 11:25:28,751 runserver [mHTTP OPTIONS /api/doctor/ 200 [0.01, 127.0.0.1:52361][0m
+INFO 2025-11-21 11:25:28,753 runserver [mHTTP OPTIONS /api/departments/ 200 [0.00, 127.0.0.1:49176][0m
+INFO 2025-11-21 11:25:28,754 runserver [mHTTP OPTIONS /api/doctor/ 200 [0.00, 127.0.0.1:64964][0m
+WARNING 2025-11-21 11:25:28,773 log Unauthorized: /api/departments/
+WARNING 2025-11-21 11:25:28,773 log Unauthorized: /api/doctor/
+WARNING 2025-11-21 11:25:28,774 runserver [31;1mHTTP GET /api/departments/ 401 [0.02, 127.0.0.1:61883][0m
+WARNING 2025-11-21 11:25:28,774 runserver [31;1mHTTP GET /api/doctor/ 401 [0.02, 127.0.0.1:65101][0m
+WARNING 2025-11-21 11:25:28,781 log Unauthorized: /api/departments/
+WARNING 2025-11-21 11:25:28,782 runserver [31;1mHTTP GET /api/departments/ 401 [0.01, 127.0.0.1:61883][0m
+WARNING 2025-11-21 11:25:28,784 log Unauthorized: /api/doctor/
+WARNING 2025-11-21 11:25:28,784 runserver [31;1mHTTP GET /api/doctor/ 401 [0.01, 127.0.0.1:65101][0m
+WARNING 2025-11-21 11:25:28,791 log Unauthorized: /api/departments/
+WARNING 2025-11-21 11:25:28,792 runserver [31;1mHTTP GET /api/departments/ 401 [0.01, 127.0.0.1:61883][0m
+WARNING 2025-11-21 11:25:28,793 log Unauthorized: /api/doctor/
+WARNING 2025-11-21 11:25:28,795 runserver [31;1mHTTP GET /api/doctor/ 401 [0.01, 127.0.0.1:65101][0m
+WARNING 2025-11-21 11:25:28,801 log Unauthorized: /api/departments/
+WARNING 2025-11-21 11:25:28,802 runserver [31;1mHTTP GET /api/departments/ 401 [0.01, 127.0.0.1:61883][0m
+WARNING 2025-11-21 11:25:28,803 log Unauthorized: /api/doctor/
+WARNING 2025-11-21 11:25:28,804 runserver [31;1mHTTP GET /api/doctor/ 401 [0.01, 127.0.0.1:65101][0m
+INFO 2025-11-21 11:28:39,057 autoreload D:\Minor Project\backend\healthcare_backend\healthcare\models.py changed, reloading.
+INFO 2025-11-21 11:28:39,928 autoreload Watching for file changes with StatReloader
+INFO 2025-11-21 11:28:41,450 autoreload D:\Minor Project\backend\healthcare_backend\healthcare\models.py changed, reloading.
+INFO 2025-11-21 11:28:42,343 autoreload Watching for file changes with StatReloader
+INFO 2025-11-21 11:28:44,932 autoreload D:\Minor Project\backend\healthcare_backend\healthcare\models.py changed, reloading.
+INFO 2025-11-21 11:28:45,801 autoreload Watching for file changes with StatReloader
+INFO 2025-11-21 11:28:51,474 autoreload D:\Minor Project\backend\healthcare_backend\healthcare\models.py changed, reloading.
+INFO 2025-11-21 11:28:52,303 autoreload Watching for file changes with StatReloader
+INFO 2025-11-21 11:28:54,680 autoreload D:\Minor Project\backend\healthcare_backend\healthcare\models.py changed, reloading.
+INFO 2025-11-21 11:28:55,668 autoreload Watching for file changes with StatReloader

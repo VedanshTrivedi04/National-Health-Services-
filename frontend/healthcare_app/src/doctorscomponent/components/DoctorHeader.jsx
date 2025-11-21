@@ -2,22 +2,26 @@
 import React, { useState, useEffect } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-
+import "./DoctorHeader.css"
 function DoctorHeader() {
   const [isMobileNavActive, setIsMobileNavActive] = useState(false);
   const { isAuthenticated, user, logout } = useAuth();
 
-  // Close mobile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      const mobileNav = document.querySelector('.mobile-nav');
-      const mobileMenu = document.querySelector('.mobile-menu');
-      
-      if (mobileNav && mobileMenu && !mobileNav.contains(event.target) && !mobileMenu.contains(event.target)) {
+      const mobileNav = document.querySelector('.mobile-nav-panel');
+      const mobileMenu = document.querySelector('.mobile-menu-btn');
+
+      if (
+        mobileNav &&
+        mobileMenu &&
+        !mobileNav.contains(event.target) &&
+        !mobileMenu.contains(event.target)
+      ) {
         setIsMobileNavActive(false);
       }
     };
-    
+
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
@@ -37,68 +41,82 @@ function DoctorHeader() {
 
   return (
     <>
-      <div className="top-bar">
-        <div className="top-bar-content">
-          <div className="top-bar-contact">
-            <i className="fas fa-phone-alt"></i> National Helpline: 1075 | <i className="fas fa-envelope"></i> support@nationalhealth.gov
+      {/* Top Bar */}
+      <div className="doctor-top-bar">
+        <div className="doctor-top-bar-content">
+          <div className="doctor-top-left">
+            <i className="fas fa-phone-alt"></i> Helpline: 1075 &nbsp;|&nbsp;
+            <i className="fas fa-envelope"></i> support@health.gov
           </div>
-          <div className="top-bar-links">
+          <div className="doctor-top-right">
             <a href="#"><i className="fas fa-globe"></i> English</a>
             <a href="#"><i className="fas fa-question-circle"></i> Help</a>
           </div>
         </div>
       </div>
 
-      <header>
-        <div className="container">
-          <nav className="navbar">
-            <Link to="/doctor/dashboard" className="logo">
-              <div className="emblem">
+      {/* Header */}
+      <header className="doctor-header">
+        <div className="doctor-container">
+          <nav className="doctor-navbar">
+
+            {/* Logo */}
+            <Link to="/doctor/dashboard" className="doctor-logo">
+              <div className="doctor-logo-emblem">
                 <i className="fas fa-plus-circle"></i>
               </div>
-              <div className="logo-text">
-                <div className="logo-main">National Health Services</div>
-                <div className="logo-sub">Government of India</div>
+              <div>
+                <div className="doctor-logo-main">National Health Services</div>
+                <div className="doctor-logo-sub">Government of India</div>
               </div>
             </Link>
-            
-            <ul className="nav-links">
-              <li><NavLink to="doctor/queue" className={({ isActive }) => isActive ? 'active' : ''}>Queue Management</NavLink></li>
-              <li><NavLink to="doctor/session" className={({ isActive }) => isActive ? 'active' : ''}>Live Session</NavLink></li>
-              <li><NavLink to="doctor/profile" className={({ isActive }) => isActive ? 'active' : ''}>Profile</NavLink></li>
-              <li><NavLink to="doctor/cabinet" className={({ isActive }) => isActive ? 'active' : ''}>Cabin Display</NavLink></li>
+
+            {/* Desktop Nav */}
+            <ul className="doctor-nav-links">
+              <li><NavLink to="/doctor/queue">Queue</NavLink></li>
+              <li><NavLink to="/doctor/session">Live Session</NavLink></li>
+              <li><NavLink to="/doctor/profile">Profile</NavLink></li>
+              <li><NavLink to="/doctor/cabinet">Cabin Display</NavLink></li>
             </ul>
-            
-            <div className="auth-buttons">
+
+            {/* Auth Buttons */}
+            <div className="doctor-auth">
               {isAuthenticated ? (
                 <>
-                  <div className="user-info">
-                    <div className="user-avatar">
-                      {user?.full_name ? user.full_name.charAt(0).toUpperCase() : 'U'}
-                    </div>
-                    <span>{user?.full_name || 'User'}</span>
+                  <div className="doctor-user-box">
+                    <span>{user?.full_name}</span>
                   </div>
-                  <button className="btn btn-outline" onClick={handleLogout}>Logout</button>
+                  <button className="doctor-btn-outline" onClick={handleLogout}>
+                    Logout
+                  </button>
                 </>
               ) : (
                 <>
-                  <Link to="/login">
-                    <button className="btn btn-outline">Login</button>
-                  </Link>
-                  <Link to="/signup">
-                    <button className="btn btn-primary">Register</button>
-                  </Link>
+                  <Link to="/login"><button className="doctor-btn-outline">Login</button></Link>
+                  <Link to="/signup"><button className="doctor-btn-primary">Register</button></Link>
                 </>
               )}
             </div>
-            
-            <div className="mobile-menu" onClick={toggleMobileNav}>
+
+            {/* Mobile Menu Button */}
+            <div className="mobile-menu-btn" onClick={toggleMobileNav}>
               <i className="fas fa-bars"></i>
             </div>
           </nav>
         </div>
-        
-       
+
+        {/* Mobile Navigation Panel */}
+        <div className={`mobile-nav-panel ${isMobileNavActive ? 'active' : ''}`}>
+          <ul>
+            <li><Link to="/doctor/queue">Queue</Link></li>
+            <li><Link to="/doctor/session">Live Session</Link></li>
+            <li><Link to="/doctor/profile">Profile</Link></li>
+            <li><Link to="/doctor/cabinet">Cabin Display</Link></li>
+            {isAuthenticated && (
+              <li className="mobile-logout" onClick={handleLogout}>Logout</li>
+            )}
+          </ul>
+        </div>
       </header>
     </>
   );

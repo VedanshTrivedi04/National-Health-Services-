@@ -834,3 +834,159 @@ header {
   color: #ffffff;
   font-weight: 600;
 }
+/* ============================================================
+   🌟 MOBILE OPTIMIZED RESPONSIVE UI — DOCTOR DASHBOARD
+   ============================================================ */
+
+/* -----------  Tablets (max-width: 992px)  ----------- */
+@media (max-width: 992px) {
+
+  .doctor-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+  }
+
+  .doctor-info {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .status-toggle {
+    width: 100%;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-sidebar {
+    order: -1;
+  }
+
+  .dashboard-card {
+    padding: 18px;
+  }
+}
+
+/* -----------  Mobile (max-width: 768px)  ----------- */
+@media (max-width: 768px) {
+
+  .doctor-header {
+    padding: 15px 0;
+  }
+
+  .doctor-avatar {
+    width: 65px;
+    height: 65px;
+    font-size: 26px;
+  }
+
+  .doctor-details h1 {
+    font-size: 20px;
+  }
+
+  .toggle-btn {
+    flex: 1;
+    font-size: 14px;
+    padding: 8px 10px;
+  }
+
+  /* NOW SERVING */
+  .current-patient {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .patient-details h3 {
+    font-size: 18px;
+  }
+
+  .consultation-actions {
+    flex-direction: column;
+  }
+
+  .consultation-actions .btn {
+    width: 100%;
+  }
+
+  /* QUEUE ITEMS */
+  .queue-item {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .queue-status {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* UPCOMING PATIENT */
+  .upcoming-patient {
+    flex-direction: column;
+    gap: 10px;
+    text-align: left;
+    padding: 12px;
+  }
+
+  .upcoming-patient-info {
+    width: 100%;
+  }
+
+  /* STAT GRID */
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Call Next Patient */
+  .call-next-btn {
+    width: 100%;
+    font-size: 15px;
+    padding: 12px;
+  }
+}
+
+/* ----------- Very Small Phones (max-width: 480px) ----------- */
+@media (max-width: 480px) {
+
+  .doctor-details p {
+    font-size: 13px;
+  }
+
+  .status-toggle {
+    flex-direction: column;
+  }
+
+  .toggle-btn {
+    width: 100%;
+  }
+
+  .token-number {
+    font-size: 16px;
+  }
+
+  .patient-name {
+    font-size: 14px;
+  }
+
+  .eta {
+    font-size: 13px;
+  }
+
+  .status-label {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
+
+  .dashboard-card {
+    padding: 15px;
+  }
+}

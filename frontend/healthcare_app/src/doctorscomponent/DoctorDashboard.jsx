@@ -221,10 +221,6 @@ const DoctorDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    const offlineTimeout = setTimeout(() => setIsOffline(true), 15000);
-    return () => clearTimeout(offlineTimeout);
-  }, []);
 
   if (loading) return <div className="loading-screen">Loading dashboard...</div>;
 

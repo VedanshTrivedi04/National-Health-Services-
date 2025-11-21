@@ -1,0 +1,86 @@
+/* FOOTER BASE */
+.doctor-footer {
+  background: #2d2c2c;   /* ← Your color */
+  border-top: 1px solid #444;
+  margin-top: 40px;
+  padding-top: 40px;
+  color: #f5f5f5;        /* Light text for contrast */
+  font-family: "Inter", sans-serif;
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 0 20px;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 40px;
+}
+
+/* Columns */
+.footer-col {
+  flex: 1 1 250px;
+  min-width: 250px;
+}
+
+.footer-col h3 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #ffffff;        /* White headings */
+}
+
+.footer-col p {
+  line-height: 1.5;
+  font-size: 14px;
+  color: #dcdcdc;        /* Soft grey */
+}
+
+.footer-col ul {
+  list-style: none;
+  padding: 0;
+}
+
+.footer-col ul li {
+  margin-bottom: 10px;
+}
+
+.footer-col ul li a {
+  text-decoration: none;
+  color: #e4e4e4;
+  font-size: 14px;
+  transition: 0.3s;
+}
+
+.footer-col ul li a:hover {
+  color: #76baff;        /* Soft blue hover */
+}
+
+/* Bottom Bar */
+.footer-bottom {
+  text-align: center;
+  padding: 15px 0;
+  margin-top: 30px;
+  background: #242323;   /* Slightly darker bottom bar */
+  font-size: 14px;
+  color: #cfcfcf;
+  border-top: 1px solid #444;
+}
+
+/* ICONS */
+.footer-col i {
+  margin-right: 8px;
+  color: #76baff;        /* matching soft blue */
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .footer-container {
+    text-align: center;
+  }
+
+  .footer-col {
+    flex: 1 1 100%;
+  }
+}

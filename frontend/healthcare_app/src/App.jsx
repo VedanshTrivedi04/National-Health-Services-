@@ -19,6 +19,7 @@ import QueueManagement from './doctorscomponent/QueueManagement'
 import LiveSession from './doctorscomponent/LiveSession'
 import Departmentent from './patientcomponent/pages/Departmentent'
 import DoctorQueue from './patientcomponent/pages/DoctorQueue'
+import DoctorFooter from './doctorscomponent/components/DoctorFooter'
 
 function MainLayout() {
   return (
@@ -36,7 +37,7 @@ function DoctorMainLayout() {
       <DoctorHeader />
      
       <Outlet /> 
-      <Footer />
+      <DoctorFooter />
     </>
   );
 }
