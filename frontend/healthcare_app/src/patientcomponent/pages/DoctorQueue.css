@@ -101,3 +101,16 @@
   font-size: 12px;
   color: #888;
 }
+
+.eta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  font-size: 13px;
+  color: #2563eb;
+}
+
+.eta-time {
+  font-weight: 600;
+}

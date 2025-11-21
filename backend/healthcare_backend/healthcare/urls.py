@@ -13,7 +13,8 @@ from .views import (
     live_queue_status,
     QueueStatusViewSet,
     get_doctor_reviews,
-    add_doctor_review
+    add_doctor_review,
+    NotificationViewSet,
 
 )
 router = DefaultRouter()
@@ -30,6 +31,7 @@ router.register(r'departments', DepartmentViewSet, basename='department')
 router.register(r'medical-records', MedicalRecordViewSet, basename='medical-record')
 router.register(r'family-members', FamilyMemberViewSet, basename='family-member')
 router.register(r'queue/status', QueueStatusViewSet, basename='queue-status')
+router.register(r'notifications', NotificationViewSet, basename='notification')
 
 urlpatterns = [
     path("queue/live/", live_queue_status),

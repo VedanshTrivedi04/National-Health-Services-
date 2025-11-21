@@ -143,26 +143,15 @@ const DoctorDashboard = () => {
     console.log("📡 API CALL → MARK NO-SHOW for ID:", active.id);
 
     try {
-      const res = await apiService.safeRequest(
-        `/doctor/${active.id}/end_consultation/`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            no_show: true,
-            notes: "Patient marked as no-show."
-          })
-        }
-      );
+      const res = await apiService.endConsultation(active.id, {
+        no_show: true,
+        notes: "Patient marked as no-show."
+      });
 
-      handleCallNext();
       console.log("✅ API RESPONSE → no-show", res);
 
-      // Refresh dashboard
       await fetchDashboardData();
-
-      // 🚀 AUTO CALL NEXT PATIENT
       handleCallNext();
-
     } catch (err) {
       console.error("❌ API ERROR → no-show", err);
       alert("Cannot mark no-show.");

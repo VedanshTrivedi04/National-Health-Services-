@@ -23,9 +23,10 @@ const DoctorQueue = () => {
     try {
       const today = new Date().toISOString().split("T")[0];
 
-      const data = await apiService.safeRequest(
-        `/queue/status/?doctor=${doctorId}&date=${today}`
-      );
+      const data = await apiService.getQueueStatus({
+        doctorId,
+        date: today,
+      });
 
       console.log("🔥 RAW API:", data);
 
@@ -137,6 +138,12 @@ const DoctorQueue = () => {
                       </div>
                       <div className="queue-pos">
                         Position: {item.queue_position}
+                      </div>
+                      <div className="eta-row">
+                        <span>ETA: {item.eta_minutes ?? "—"} min</span>
+                        {item.estimated_time && (
+                          <span className="eta-time">Est. {item.estimated_time}</span>
+                        )}
                       </div>
                     </div>
                   ))}

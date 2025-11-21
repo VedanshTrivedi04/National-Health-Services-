@@ -1,9 +1,9 @@
-from rest_framework import viewsets, status, permissions
+from rest_framework import viewsets, status, permissions, mixins
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils import timezone
-from django.db.models import Count
+from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField
 from datetime import datetime, timedelta, date, time
 
 from channels.layers import get_channel_layer
@@ -11,13 +11,24 @@ from asgiref.sync import async_to_sync
 from rest_framework.permissions import IsAuthenticated
 from .models import (
     User, Doctor, Department, Appointment, MedicalRecord, DoctorReview,
-    FamilyMember, DoctorAvailability, QueueStatus
+    FamilyMember, DoctorAvailability, QueueStatus, Notification
 )
 from .serializers import *
 from .permissions import IsPatient, IsDoctor, IsAdmin
-from .models import QueueStatus
-from .serializers import QueueStatusSerializer
-from rest_framework import viewsets
+
+
+def _send_notification(user, title, message, *, category='general', appointment=None, data=None):
+    """Utility helper to create in-app notifications safely."""
+    if not user:
+        return
+    Notification.objects.create(
+        user=user,
+        appointment=appointment,
+        title=title,
+        message=message,
+        category=category,
+        data=data or {}
+    )
 
 # ============================================================
 #                       AUTHENTICATION
@@ -250,6 +261,34 @@ class AppointmentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         appointment = serializer.save(patient=self.request.user)
         self._update_queue(appointment.doctor, appointment.appointment_date)
+        _send_notification(
+            appointment.patient,
+            "Appointment Confirmed",
+            f"Your appointment with {appointment.doctor.full_name} "
+            f"on {appointment.appointment_date} at {appointment.time_slot} is booked. "
+            f"Token: {appointment.token_number}",
+            category='appointment',
+            appointment=appointment,
+            data={
+                "token": appointment.token_number,
+                "doctor": appointment.doctor.full_name,
+                "time": str(appointment.time_slot)
+            }
+        )
+
+    def perform_destroy(self, instance):
+        doctor = instance.doctor
+        appt_date = instance.appointment_date
+        patient = instance.patient
+        token = instance.token_number
+        super().perform_destroy(instance)
+        self._update_queue(doctor, appt_date)
+        _send_notification(
+            patient,
+            "Appointment Removed",
+            f"Your appointment (token {token}) was removed from the queue.",
+            category='appointment'
+        )
 
     # ---------------- Start Consultation ----------------
     @action(detail=True, methods=['post'], permission_classes=[IsDoctor])
@@ -261,6 +300,15 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         appt.status = "in_progress"
         appt.consultation_started_at = timezone.now()
         appt.save()
+        self._update_queue(appt.doctor, appt.appointment_date)
+
+        _send_notification(
+            appt.patient,
+            "Consultation Started",
+            f"Please proceed to the cabin. Token {appt.token_number} is now in progress.",
+            category='queue',
+            appointment=appt
+        )
         return Response(AppointmentSerializer(appt).data)
 
     # ---------------- End Consultation ----------------
@@ -270,8 +318,13 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         if appt.doctor.user != request.user:
             return Response({"error": "Not authorized"}, status=403)
 
-        appt.status = "completed"
-        appt.consultation_ended_at = timezone.now()
+        mark_no_show = request.data.get("no_show")
+        if mark_no_show:
+            appt.status = "no_show"
+        else:
+            appt.status = "completed"
+            appt.consultation_ended_at = timezone.now()
+
         appt.notes = request.data.get("notes", "")
         appt.prescription = request.data.get("prescription", "")
         appt.save()
@@ -287,7 +340,97 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                 serializer.save()
 
         self._update_queue(appt.doctor, appt.appointment_date)
+
+        if mark_no_show:
+            title = "Marked as No-Show"
+            message = f"Token {appt.token_number} was marked as no-show. Please rebook if needed."
+            category = 'queue'
+        else:
+            title = "Consultation Completed"
+            message = f"Your consultation with {appt.doctor.full_name} is completed."
+            category = 'appointment'
+
+        _send_notification(
+            appt.patient,
+            title,
+            message,
+            category=category,
+            appointment=appt
+        )
         return Response(AppointmentSerializer(appt).data)
+
+    @action(detail=True, methods=['post'])
+    def cancel(self, request, pk=None):
+        appt = self.get_object()
+        user = request.user
+        if user != appt.patient and getattr(user, 'doctor_profile', None) != appt.doctor and user.role != 'admin':
+            return Response({"error": "Not authorized"}, status=403)
+
+        appt.status = 'cancelled'
+        appt.save(update_fields=['status'])
+        self._update_queue(appt.doctor, appt.appointment_date)
+
+        _send_notification(
+            appt.patient,
+            "Appointment Cancelled",
+            f"Your appointment with {appt.doctor.full_name} on {appt.appointment_date} has been cancelled.",
+            category='appointment',
+            appointment=appt
+        )
+        return Response({"status": "cancelled"})
+
+    @action(detail=True, methods=['patch'])
+    def status(self, request, pk=None):
+        appt = self.get_object()
+        status_value = request.data.get('status')
+        if status_value not in dict(Appointment.STATUS_CHOICES):
+            return Response({"error": "Invalid status"}, status=400)
+
+        appt.status = status_value
+        appt.save(update_fields=['status'])
+        self._update_queue(appt.doctor, appt.appointment_date)
+        return Response(AppointmentSerializer(appt).data)
+
+    @action(detail=True, methods=['post'])
+    def reschedule(self, request, pk=None):
+        appt = self.get_object()
+        user = request.user
+        if user != appt.patient and getattr(user, 'doctor_profile', None) != appt.doctor and user.role != 'admin':
+            return Response({"error": "Not authorized"}, status=403)
+
+        payload = {
+            'doctor': request.data.get('doctor', appt.doctor.id),
+            'department': request.data.get('department', appt.department.id),
+            'appointment_date': request.data.get('appointment_date', appt.appointment_date),
+            'time_slot': request.data.get('time_slot', appt.time_slot),
+            'reason': request.data.get('reason', appt.reason),
+            'booking_type': request.data.get('booking_type', appt.booking_type),
+            'is_for_self': request.data.get('is_for_self', appt.is_for_self),
+            'patient_relation': request.data.get('patient_relation', appt.patient_relation),
+        }
+
+        old_doctor = appt.doctor
+        old_date = appt.appointment_date
+
+        serializer = AppointmentCreateSerializer(
+            instance=appt,
+            data=payload
+        )
+        serializer.is_valid(raise_exception=True)
+        updated = serializer.save()
+
+        self._update_queue(old_doctor, old_date)
+        self._update_queue(updated.doctor, updated.appointment_date)
+
+        _send_notification(
+            updated.patient,
+            "Appointment Rescheduled",
+            f"New slot: {updated.appointment_date} at {updated.time_slot} with {updated.doctor.full_name}.",
+            category='appointment',
+            appointment=updated
+        )
+
+        return Response(AppointmentSerializer(updated).data)
 
     # ---------------- Available Slots ----------------
     @action(detail=False, methods=['get'], url_path='available_slots')
@@ -351,15 +494,112 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 
     # ---------------- Queue Logic ----------------
     def _update_queue(self, doctor, appt_date):
-        qs, _ = QueueStatus.objects.get_or_create(
-            doctor=doctor, appointment_date=appt_date
+        """Recalculate queue ordering, ETA and aggregate stats for a doctor."""
+        if not doctor or not appt_date:
+            return
+
+        appointments = list(
+            Appointment.objects.filter(
+                doctor=doctor,
+                appointment_date=appt_date
+            ).order_by('queue_position', 'time_slot', 'created_at')
         )
-        qs.total_tokens = Appointment.objects.filter(
+
+        qs, _ = QueueStatus.objects.get_or_create(
             doctor=doctor,
-            appointment_date=appt_date,
-            status__in=['scheduled', 'confirmed', 'in_progress']
-        ).count()
+            appointment_date=appt_date
+        )
+
+        # Determine consultation averages from historical data (fallback 10 mins)
+        duration_qs = Appointment.objects.filter(
+            doctor=doctor,
+            status='completed',
+            consultation_started_at__isnull=False,
+            consultation_ended_at__isnull=False
+        ).annotate(
+            duration=ExpressionWrapper(
+                F('consultation_ended_at') - F('consultation_started_at'),
+                output_field=DurationField()
+            )
+        )
+
+        avg_duration = duration_qs.aggregate(avg=Avg('duration'))['avg']
+        if not avg_duration:
+            fallback_minutes = doctor.average_time_per_patient or 10
+            avg_duration = timedelta(minutes=fallback_minutes)
+        else:
+            # keep doctor profile aligned in minutes
+            doctor.average_time_per_patient = round(avg_duration.total_seconds() / 60, 1)
+            doctor.save(update_fields=['average_time_per_patient'])
+
+        avg_minutes = max(int(avg_duration.total_seconds() // 60), 5)
+
+        # Queue aggregates
+        waiting_statuses = ['scheduled', 'confirmed', 'waiting']
+        active_appt = next(
+            (a for a in appointments if a.status == 'in_progress'),
+            None
+        )
+        next_in_line = next(
+            (a for a in appointments if a.status in waiting_statuses),
+            None
+        )
+
+        qs.current_token = (
+            active_appt.token_number if active_appt else
+            (next_in_line.token_number if next_in_line else '')
+        )
+        qs.total_tokens = len([
+            a for a in appointments
+            if a.status not in ['cancelled', 'no_show']
+        ])
+        qs.completed_tokens = len([a for a in appointments if a.status == 'completed'])
+        qs.average_time_per_patient = avg_duration
         qs.save()
+
+        # Recalculate queue positions + ETA
+        updates = []
+        running_offset = 0
+        now = timezone.localtime()
+
+        for idx, appt in enumerate(appointments, start=1):
+            fields_to_update = []
+
+            if appt.queue_position != idx:
+                appt.queue_position = idx
+                fields_to_update.append('queue_position')
+
+            status = (appt.status or '').lower()
+
+            if status in ['completed', 'cancelled', 'no_show']:
+                wait_minutes = 0
+            elif appt == active_appt or status == 'in_progress':
+                wait_minutes = 0
+                running_offset = avg_minutes
+            elif status in waiting_statuses:
+                wait_minutes = max(running_offset, 0)
+                running_offset += avg_minutes
+            else:
+                wait_minutes = 0
+
+            if appt.estimated_wait_minutes != wait_minutes:
+                appt.estimated_wait_minutes = wait_minutes
+                fields_to_update.append('estimated_wait_minutes')
+
+            estimated_dt = now + timedelta(minutes=wait_minutes)
+            estimated_time = estimated_dt.time()
+            if appt.estimated_time != estimated_time:
+                appt.estimated_time = estimated_time
+                fields_to_update.append('estimated_time')
+
+            if fields_to_update:
+                updates.append(appt)
+
+        if updates:
+            Appointment.objects.bulk_update(
+                updates,
+                ['queue_position', 'estimated_wait_minutes', 'estimated_time']
+            )
 
 
 # ============================================================
@@ -384,7 +624,10 @@ def live_queue_status(request):
             pending.append({
                 "token_number": a.token_number,
                 "patient_name": a.patient.full_name,
-                "eta_minutes": getattr(a, "eta_minutes", 15)
+                "eta_minutes": a.estimated_wait_minutes,
+                "estimated_time": a.estimated_time.strftime("%H:%M") if a.estimated_time else None,
+                "doctor": a.doctor.full_name,
+                "status": a.status
             })
 
     return Response({
@@ -508,4 +751,26 @@ class QueueStatusViewSet(viewsets.ReadOnlyModelViewSet):
             qs = qs.filter(doctor_id=doctor_id)
         return qs
 
+
+class NotificationViewSet(mixins.ListModelMixin,
+                          mixins.UpdateModelMixin,
+                          viewsets.GenericViewSet):
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user).order_by('-created_at')
+
+    @action(detail=True, methods=['post'])
+    def mark_read(self, request, pk=None):
+        notif = self.get_object()
+        notif.mark_read()
+        return Response({"status": "read"})
+
+    @action(detail=False, methods=['post'])
+    def mark_all_read(self, request):
+        updated = self.get_queryset().filter(is_read=False)
+        count = updated.count()
+        updated.update(is_read=True, read_at=timezone.now())
+        return Response({"updated": count})
 

@@ -201,47 +201,53 @@ class ApiService {
     return this.safeRequest(`/doctor/${id}/`);
   }
 
-  async getDoctorAppointments() {
-    return this.safeRequest("/doctor/appointments/");
+  async updateDoctor(id, data) {
+    return this.safeRequest(`/doctor/${id}/`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
   }
 
-  // ======================
-  // ⭐ FIXED ⭐
-  // DOCTOR QUEUE (OLD WRONG ENDPOINT REMOVED)
-  // ======================
   async getDoctorDashboard() {
     return this.safeRequest("/doctor/dashboard/");
   }
 
-  // ======================
-  // ⭐ FIXED — REAL BACKEND ROUTES ⭐
-  // START / END CONSULTATION
-  // ======================
+  async getDoctorAppointments(date) {
+    const query = date ? `?date=${date}` : "";
+    return this.safeRequest(`/doctor/appointments/${query}`);
+  }
+
   async startConsultation(appointmentId) {
-    return this.safeRequest(`/doctor/${appointmentId}/start_consultation/`, {
+    return this.safeRequest(`/appointments/${appointmentId}/start_consultation/`, {
       method: "POST",
     });
   }
 
-  async endConsultation(appointmentId) {
-    return this.safeRequest(`/doctor/${appointmentId}/end_consultation/`, {
+  async endConsultation(appointmentId, body = {}) {
+    return this.safeRequest(`/appointments/${appointmentId}/end_consultation/`, {
       method: "POST",
+      body: JSON.stringify(body),
     });
   }
 
-  // ======================
-  // UPDATE DOCTOR AVAILABILITY
-  // ======================
- async updateDoctorAvailability(data) {
-  return this.safeRequest(`/doctor/availability/`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-}
+  async finishConsultation(appointmentId) {
+    return this.endConsultation(appointmentId);
+  }
 
-async getQueueStatus(doctorId) {
-  return this.safeRequest(`/appointments/queue_status/?doctor_id=${doctorId}`);
-}
+  async updateDoctorAvailability(data) {
+    return this.safeRequest(`/doctor/availability/`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getQueueStatus({ doctorId, date } = {}) {
+    const params = new URLSearchParams();
+    if (doctorId) params.append("doctor", doctorId);
+    if (date) params.append("date", date);
+    const query = params.toString();
+    return this.safeRequest(`/queue/status/${query ? `?${query}` : ""}`);
+  }
 
   // ======================
   // 📅 APPOINTMENTS
@@ -267,10 +273,8 @@ async getQueueStatus(doctorId) {
     });
   }
 
-  async completeAppointment(id) {
-    return this.safeRequest(`/appointments/${id}/complete/`, {
-      method: "POST",
-    });
+  async completeAppointment(id, body = {}) {
+    return this.endConsultation(id, body);
   }
 
   async updateAppointmentStatus(id, status) {
@@ -304,39 +308,14 @@ async getQueueStatus(doctorId) {
   async getFamilyMembers() {
     return this.safeRequest("/family-members/");
   }
-async rescheduleAppointment(id, data) {
-  return this.safeRequest(`/appointments/${id}/reschedule/`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-}
-// --- in src/services/api.js, replace the existing startConsultation/endConsultation with:
-
-  // ======================
-  // START / END CONSULTATION (real backend routes)
-  // ======================
-  async startConsultation(appointmentId) {
-    // correct endpoint per your API: POST /api/appointments/{id}/start_consultation/
-    return this.safeRequest(`/appointments/${appointmentId}/start_consultation/`, {
+  async rescheduleAppointment(id, data) {
+    return this.safeRequest(`/appointments/${id}/reschedule/`, {
       method: "POST",
+      body: JSON.stringify(data),
     });
-  }
-
-  async endConsultation(appointmentId, body = {}) {
-    // correct endpoint: POST /api/appointments/{id}/end_consultation/
-    return this.safeRequest(`/appointments/${appointmentId}/end_consultation/`, {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
-  }
-
-  // alias that LiveSession might expect
-  async finishConsultation(appointmentId) {
-    return this.endConsultation(appointmentId);
   }
 
   async getDoctorReviews(doctorId) {
-    // returns either array or paginated object
     return this.safeRequest(`/doctors/${doctorId}/reviews/`);
   }
 
@@ -346,11 +325,24 @@ async rescheduleAppointment(id, data) {
       body: JSON.stringify(data),
     });
   }
+
   // ======================
-  // 🕒 QUEUE STATUS (VIEW ONLY)
+  // 🔔 NOTIFICATIONS
   // ======================
-  async getQueue() {
-    return this.safeRequest("/queue-status/");
+  async getNotifications() {
+    return this.safeRequest("/notifications/");
+  }
+
+  async markNotificationRead(id) {
+    return this.safeRequest(`/notifications/${id}/mark_read/`, {
+      method: "POST",
+    });
+  }
+
+  async markAllNotificationsRead() {
+    return this.safeRequest("/notifications/mark_all_read/", {
+      method: "POST",
+    });
   }
 
   // ======================

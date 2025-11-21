@@ -65,11 +65,8 @@ const QueueManagement = () => {
       setLoading(true);
       const today = new Date().toISOString().split('T')[0];
       console.log('📡 API CALL → GET /doctor/appointments/?date=', today);
-      // GET doctor's appointments for today (doctor view)
-      const response = await apiService.safeRequest(`/doctor/appointments/?date=${today}`);
+      const response = await apiService.getDoctorAppointments(today);
       console.log('✅ API RESPONSE → /doctor/appointments', response);
-      // The doctor appointments action returns an array (today_appointments) in earlier viewset versions;
-      // here we assume the action returns an array. If it's wrapped, adapt to response.results.
       setQueue(Array.isArray(response) ? response : (response?.results || []));
     } catch (err) {
       console.error('Error fetching queue:', err);
@@ -150,7 +147,7 @@ const QueueManagement = () => {
   const handleStartConsultation = async (appointment) => {
     try {
       console.log('📡 ACTION → POST /appointments/{id}/start_consultation/', appointment.id);
-      await apiService.safeRequest(`/appointments/${appointment.id}/start_consultation/`, { method: 'POST' });
+      await apiService.startConsultation(appointment.id);
       alert(`Consultation started for token ${appointment.token_number}`);
       await fetchQueueData();
     } catch (err) {
@@ -160,31 +157,40 @@ const QueueManagement = () => {
   };
 
   // Reassign patient
-const handleReassign = async () => {
-  if (!selectedDoctorId || !modalState.data) return;
+  const handleReassign = async () => {
+    if (!selectedDoctorId || !modalState.data) return;
 
-  const appointment = modalState.data;
+    const appointment = modalState.data;
+    const newDoctor = availableDoctors.find(
+      (doc) => Number(doc.id) === Number(selectedDoctorId)
+    );
+    const departmentId =
+      newDoctor?.department_id ??
+      newDoctor?.department?.id ??
+      appointment?.department;
 
-  try {
-    console.log("📡 ACTION → reschedule appointment");
+    try {
+      console.log("📡 ACTION → reschedule appointment");
 
-    await apiService.safeRequest(`/appointments/${appointment.id}/reschedule/`, {
-      method: "POST",
-      body: JSON.stringify({
-        new_doctor_id: selectedDoctorId,
-        appointment_date: appointment.appointment_date, 
+      await apiService.rescheduleAppointment(appointment.id, {
+        doctor: selectedDoctorId,
+        department: departmentId,
+        appointment_date: appointment.appointment_date,
         time_slot: appointment.time_slot,
-      }),
-    });
+        reason: appointment.reason,
+        booking_type: appointment.booking_type,
+        is_for_self: appointment.is_for_self,
+        patient_relation: appointment.patient_relation,
+      });
 
-    alert(`Patient ${appointment.token_number} reassigned successfully.`);
-    closeModal();
-    await fetchQueueData();
-  } catch (err) {
-    console.error("Error reassigning:", err);
-    alert("Failed to reassign patient.");
-  }
-};
+      alert(`Patient ${appointment.token_number} reassigned successfully.`);
+      closeModal();
+      await fetchQueueData();
+    } catch (err) {
+      console.error("Error reassigning:", err);
+      alert("Failed to reassign patient.");
+    }
+  };
 
 
 
@@ -194,9 +200,9 @@ const handleReassign = async () => {
     const appointment = modalState.data;
     try {
       console.log('📡 ACTION → POST /appointments/{id}/end_consultation/ (no_show)', appointment.id);
-      await apiService.safeRequest(`/appointments/${appointment.id}/end_consultation/`, {
-        method: 'POST',
-        body: JSON.stringify({ no_show: true, notes: 'Marked as no-show via queue UI' }),
+      await apiService.endConsultation(appointment.id, {
+        no_show: true,
+        notes: 'Marked as no-show via queue UI'
       });
       alert(`Patient ${appointment.token_number} marked as no-show.`);
       closeModal();
@@ -208,35 +214,10 @@ const handleReassign = async () => {
   };
 
   // Add walk-in
- const handleAddWalkin = async () => {
-  if (!walkinName || !walkinAge) {
-    alert("Please enter patient name and age.");
-    return;
-  }
-
-  try {
-    const newWalkin = {
-      patient_name: walkinName,
-      patient_age: parseInt(walkinAge),
-      priority: walkinPriority === "normal" ? null : walkinPriority,
-      reason: walkinReason,
-    };
-
-    console.log("📡 ACTION → POST /appointments/walkin/", newWalkin);
-
-    await apiService.safeRequest("/appointments/walkin/", {
-      method: "POST",
-      body: JSON.stringify(newWalkin),
-    });
-
-    alert("Walk-in patient added successfully.");
+  const handleAddWalkin = async () => {
+    alert("Walk-in flow is not available in this build. Please use the appointment booking flow.");
     closeModal();
-    fetchQueueData();
-  } catch (err) {
-    console.error("Error adding walk-in:", err);
-    alert("Failed to add walk-in.");
-  }
-};
+  };
 
   // Move patient in queue (local reorder only)
   const handleMove = (token, direction) => {

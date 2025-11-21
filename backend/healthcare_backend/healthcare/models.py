@@ -318,6 +318,7 @@ class Appointment(models.Model):
     token_number = models.CharField(max_length=20, unique=True, blank=True)
     queue_position = models.IntegerField(default=0)
     estimated_time = models.TimeField(null=True, blank=True)
+    estimated_wait_minutes = models.PositiveIntegerField(default=0)
 
     # Booking Details
     reason = models.TextField()
@@ -355,7 +356,7 @@ class Appointment(models.Model):
             date_str = self.appointment_date.strftime('%Y%m%d')
             dept_prefix = self.department.code
             count = Appointment.objects.filter(
-                department=self.department,
+                doctor=self.doctor,
                 appointment_date=self.appointment_date
             ).count() + 1
             self.token_number = f"{dept_prefix}-{date_str}-{count:04d}"
@@ -543,3 +544,45 @@ class DoctorReview(models.Model):
 
     def __str__(self):
         return f"⭐ {self.rating} by {self.patient.full_name} for {self.doctor.full_name}"
+
+
+class Notification(models.Model):
+    """Simple in-app notification for appointments/queues"""
+    CATEGORY_CHOICES = [
+        ('appointment', 'Appointment'),
+        ('queue', 'Queue'),
+        ('general', 'General'),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    appointment = models.ForeignKey(
+        Appointment,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='notifications'
+    )
+    title = models.CharField(max_length=150)
+    message = models.TextField()
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='general')
+    data = models.JSONField(default=dict, blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'notifications'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.title} → {self.user.full_name}"
+
+    def mark_read(self):
+        if not self.is_read:
+            self.is_read = True
+            self.read_at = timezone.now()
+            self.save(update_fields=['is_read', 'read_at'])

@@ -56,6 +56,14 @@ const AppointmentPage = () => {
 
     const handleSelectPatient = (patientType) => setSelectedPatient(patientType);
 
+    const formatDateLocal = (dateObj) => {
+        if (!dateObj) return null;
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     const handleSelectBookingMethod = async (method) => {
         setSelectedMethod(method);
         setSelectedDepartment(null);
@@ -113,7 +121,7 @@ const AppointmentPage = () => {
         }
         setLoadingSlots(true);
         try {
-            const dateStr = date.toISOString().split('T')[0];
+            const dateStr = formatDateLocal(date);
             const response = await apiService.getAvailableSlots(doctorId, dateStr);
             // Normalize response shape
             const slots = response?.available_slots ?? response?.results ?? response?.slots ?? [];
@@ -195,7 +203,7 @@ const AppointmentPage = () => {
         const bookingData = {
             doctor: selectedDoctor.id,
             department: departmentId,
-            appointment_date: selectedDate.toISOString().split('T')[0],
+            appointment_date: formatDateLocal(selectedDate),
             time_slot: timeSlotPayload,
             reason: 'Consultation',
             booking_type: selectedMethod,      // ensure not null

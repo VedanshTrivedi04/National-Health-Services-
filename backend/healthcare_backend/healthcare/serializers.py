@@ -4,7 +4,8 @@ from django.contrib.auth import authenticate
 from django.utils import timezone
 from .models import (
     User, Doctor, Department, Appointment, MedicalRecord,
-    FamilyMember, DoctorAvailability, Admin, QueueStatus, DoctorReview
+    FamilyMember, DoctorAvailability, Admin, QueueStatus, DoctorReview,
+    Notification
 )
 
 # ==================== Authentication Serializers ====================
@@ -198,6 +199,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
     doctor_name = serializers.CharField(source='doctor.full_name', read_only=True)
     doctor_specialty = serializers.CharField(source='doctor.specialty', read_only=True)
     department_name = serializers.CharField(source='department.name', read_only=True)
+    eta_minutes = serializers.IntegerField(source='estimated_wait_minutes', read_only=True)
 
     class Meta:
         model = Appointment
@@ -206,7 +208,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'doctor', 'doctor_name', 'doctor_specialty',
             'department', 'department_name',
             'appointment_date', 'time_slot', 'status',
-            'token_number', 'queue_position', 'estimated_time',
+            'token_number', 'queue_position', 'estimated_time', 'eta_minutes',
             'reason', 'booking_type', 'is_for_self', 'patient_relation',
             'notes', 'prescription',
             'consultation_started_at', 'consultation_ended_at',
@@ -270,37 +272,31 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
 class QueueStatusSerializer(serializers.ModelSerializer):
     doctor_name = serializers.CharField(source='doctor.full_name', read_only=True)
     pending_tokens = serializers.SerializerMethodField()
+    average_time_minutes = serializers.SerializerMethodField()
 
     class Meta:
         model = QueueStatus
         fields = [
             'id', 'doctor', 'doctor_name', 'appointment_date',
             'current_token', 'total_tokens', 'completed_tokens',
-            'average_time_per_patient', 'last_updated',
+            'average_time_per_patient', 'average_time_minutes', 'last_updated',
             'pending_tokens'
         ]
 
-    def get_pending_tokens(self, obj):
-        # all future tokens after completed ones
-        appointments = Appointment.objects.filter(
-            doctor=obj.doctor,
-            appointment_date=obj.appointment_date,
-            status='scheduled'
-        ).order_by('queue_position')
+    def get_average_time_minutes(self, obj):
+        if not obj.average_time_per_patient:
+            return None
+        return int(obj.average_time_per_patient.total_seconds() // 60)
 
-        return [
-            {
-                "token_number": a.token_number,
-                "patient_name": a.patient.full_name,
-                "queue_position": a.queue_position,
-            }
-            for a in appointments
-        ]
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        avg_minutes = data.pop('average_time_minutes', None)
+        if avg_minutes is not None:
+            data['average_time_per_patient'] = avg_minutes
+        return data
 
     def get_pending_tokens(self, obj):
         """Return all tokens that are NOT served yet"""
-
-        # Fetch appointments for this doctor & date
         appointments = Appointment.objects.filter(
             doctor=obj.doctor,
             appointment_date=obj.appointment_date
@@ -316,6 +312,8 @@ class QueueStatusSerializer(serializers.ModelSerializer):
                 "patient_name": ap.patient.full_name,
                 "queue_position": ap.queue_position,
                 "status": ap.status,
+                "eta_minutes": ap.estimated_wait_minutes,
+                "estimated_time": ap.estimated_time.strftime("%H:%M") if ap.estimated_time else None,
             })
 
         return pending_list
@@ -399,3 +397,29 @@ class DoctorReviewSerializer(serializers.ModelSerializer):
             "created_at"
         ]
         read_only_fields = ["doctor", "patient", "created_at"]
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    appointment_token = serializers.CharField(source='appointment.token_number', read_only=True)
+
+    class Meta:
+        model = Notification
+        fields = [
+            'id',
+            'title',
+            'message',
+            'category',
+            'appointment',
+            'appointment_token',
+            'data',
+            'is_read',
+            'created_at',
+            'read_at',
+        ]
+        read_only_fields = [
+            'id',
+            'appointment',
+            'appointment_token',
+            'created_at',
+            'read_at',
+        ]

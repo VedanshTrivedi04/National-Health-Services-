@@ -1,5 +1,5 @@
 // src/pages/HomePage.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useData } from "../../contexts/DataContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -22,6 +22,9 @@ const HomePage = () => {
   const [queue, setQueue] = useState(null);
   const [highlightToken, setHighlightToken] = useState(null);
   const [myTokenNumber, setMyTokenNumber] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
 
   // Data Context
   const { departments, doctors, fetchDepartments, fetchDoctors, isLoading, error } = useData();
@@ -116,6 +119,54 @@ const HomePage = () => {
     fetchDepartments();
     fetchDoctors();
   }, [fetchDepartments, fetchDoctors]);
+
+  const loadNotifications = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setNotificationsLoading(true);
+    try {
+      const response = await apiService.getNotifications();
+      const list = Array.isArray(response) ? response : (response?.results || []);
+      setNotifications(list);
+      setUnreadNotifications(list.filter((n) => !n.is_read).length);
+    } catch (error) {
+      console.error("Failed to load notifications:", error);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  const handleMarkNotificationRead = async (id) => {
+    try {
+      await apiService.markNotificationRead(id);
+      setNotifications((prev) =>
+        prev.map((notif) =>
+          notif.id === id ? { ...notif, is_read: true, read_at: new Date().toISOString() } : notif
+        )
+      );
+      setUnreadNotifications((prev) => Math.max(prev - 1, 0));
+    } catch (error) {
+      console.error("Failed to mark notification as read:", error);
+    }
+  };
+
+  const handleMarkAllNotificationsRead = async () => {
+    try {
+      await apiService.markAllNotificationsRead();
+      setNotifications((prev) =>
+        prev.map((notif) => ({ ...notif, is_read: true, read_at: new Date().toISOString() }))
+      );
+      setUnreadNotifications(0);
+    } catch (error) {
+      console.error("Failed to mark notifications as read:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    loadNotifications();
+    const poll = setInterval(loadNotifications, 20000);
+    return () => clearInterval(poll);
+  }, [isAuthenticated, loadNotifications]);
 
   // Debug logs
   useEffect(() => {
@@ -244,6 +295,57 @@ const HomePage = () => {
             <p>No pending tokens</p>
           )}
         </div>
+      </div>
+
+      {/* Notifications */}
+      <div className="notifications-box">
+        <div className="notifications-header">
+          <h3>Notifications</h3>
+          <div className="notifications-actions">
+            {unreadNotifications > 0 && (
+              <span className="unread-pill">{unreadNotifications} unread</span>
+            )}
+            <button
+              className="btn btn-outline mark-all"
+              onClick={handleMarkAllNotificationsRead}
+              disabled={notificationsLoading || unreadNotifications === 0}
+            >
+              Mark all read
+            </button>
+          </div>
+        </div>
+
+        {notificationsLoading ? (
+          <p>Loading notifications…</p>
+        ) : notifications.length === 0 ? (
+          <p>No notifications yet.</p>
+        ) : (
+          <div className="notifications-list">
+            {notifications.slice(0, 5).map((notif) => (
+              <div
+                key={notif.id}
+                className={`notification-item ${notif.is_read ? "" : "unread"}`}
+              >
+                <div>
+                  <div className="notification-title">{notif.title}</div>
+                  <div className="notification-message">{notif.message}</div>
+                  <div className="notification-meta">
+                    {new Date(notif.created_at).toLocaleString()}
+                    {notif.appointment_token ? ` • Token ${notif.appointment_token}` : ""}
+                  </div>
+                </div>
+                {!notif.is_read && (
+                  <button
+                    className="btn btn-link"
+                    onClick={() => handleMarkNotificationRead(notif.id)}
+                  >
+                    Mark read
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Doctors Section */}
