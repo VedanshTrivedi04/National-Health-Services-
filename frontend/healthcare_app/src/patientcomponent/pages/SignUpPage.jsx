@@ -2,7 +2,24 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import './login_signup.css';
+import './signup.css';
+import { 
+  FaEye, 
+  FaEyeSlash, 
+  FaUser, 
+  FaPhone, 
+  FaEnvelope, 
+  FaVenusMars, 
+  FaCalendarAlt,
+  FaIdCard,
+  FaTint,
+  FaMapMarkerAlt,
+  FaLock,
+  FaArrowRight,
+  FaArrowLeft,
+  FaCheck,
+  FaShieldAlt
+} from 'react-icons/fa';
 
 const SignUpPage = () => {
   const navigate = useNavigate();
@@ -28,6 +45,8 @@ const SignUpPage = () => {
   const [isResendDisabled, setIsResendDisabled] = useState(false);
   const [alert, setAlert] = useState({ type: '', message: '' });
   const [loading, setLoading] = useState(false);
+  const [isFocused, setIsFocused] = useState({});
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
 
   // OTP timer
   useEffect(() => {
@@ -53,6 +72,14 @@ const SignUpPage = () => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  const handleFocus = (field) => {
+    setIsFocused(prev => ({ ...prev, [field]: true }));
+  };
+
+  const handleBlur = (field) => {
+    setIsFocused(prev => ({ ...prev, [field]: false }));
+  };
+
   const handleSendOtp = () => {
     if (!formData.phone) {
       setAlert({ type: 'error', message: 'Please enter mobile number first' });
@@ -63,6 +90,17 @@ const SignUpPage = () => {
     setCountdown(120);
     setAlert({ type: 'success', message: 'OTP sent to your mobile number' });
     // TODO: Integrate real backend OTP API
+  };
+
+  const handleOtpChange = (value, index) => {
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+    
+    // Auto-focus next input
+    if (value && index < 5) {
+      document.getElementById(`otp-${index + 1}`).focus();
+    }
   };
 
   const handleVerifyOtp = () => {
@@ -108,8 +146,7 @@ const SignUpPage = () => {
       if (response.ok) {
         setAlert({
           type: 'success',
-          message:
-            'Account created successfully! Redirecting to login...',
+          message: 'Account created successfully! Redirecting to login...',
         });
         setTimeout(() => navigate('/login'), 1500);
       } else {
@@ -129,248 +166,388 @@ const SignUpPage = () => {
     }
   };
 
+  const progressPercentage = step === 1 ? 50 : 100;
+
   return (
-    <section className="signup-section">
-      <div className="signup-container">
-        <div className="signup-header">
-          <h1>Create Patient Account</h1>
-          <p>Register to access healthcare services</p>
-        </div>
-
-        {alert.message && (
-          <div
-            className={`alert ${
-              alert.type === 'success' ? 'alert-success' : 'alert-error'
-            }`}
-          >
-            {alert.message}
+    <div className="auth-container">
+      {/* Left Side - Branding */}
+      <div className="auth-hero">
+        <div className="hero-content">
+          <div className="logo">
+            <div className="logo-icon">🏥</div>
+            <h1>MediCare</h1>
           </div>
-        )}
-
-        <div className="progress-steps">
-          <div className={`step ${step === 1 ? 'active' : ''}`}>
-            <div className="step-number">1</div>
-            <div className="step-label">Contact Verification</div>
+          <div className="hero-text">
+            <h2>Join Our Healthcare Community</h2>
+            <p>Create your account to access personalized healthcare services, book appointments, and manage your medical records securely.</p>
           </div>
-          <div className={`step ${step === 2 ? 'active' : ''}`}>
-            <div className="step-number">2</div>
-            <div className="step-label">Account Creation</div>
-          </div>
-        </div>
-
-        <form onSubmit={handleCreateAccount}>
-          {/* Step 1: Contact Verification */}
-          {step === 1 && (
-            <div id="step1Form">
-              <div className="form-group">
-                <label htmlFor="full_name">Full Name *</label>
-                <input
-                  type="text"
-                  name="full_name"
-                  className="form-control"
-                  value={formData.full_name}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="gender">Gender *</label>
-                <select
-                  name="gender"
-                  className="select-control"
-                  value={formData.gender}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="">Select Gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="phone">Mobile Number *</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  className="form-control"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="email">Email Address *</label>
-                <input
-                  type="email"
-                  name="email"
-                  className="form-control"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="form-row">
-                <button
-                  type="button"
-                  className="btn btn-primary btn-otp"
-                  onClick={handleSendOtp}
-                  disabled={isResendDisabled}
-                >
-                  {isResendDisabled
-                    ? `Resend in ${formatTime(countdown)}`
-                    : 'Send OTP'}
-                </button>
-              </div>
-
-              {otpSent && (
-                <div className="otp-section">
-                  <div className="form-group">
-                    <label htmlFor="otp">Enter OTP *</label>
-                    <input
-                      type="text"
-                      name="otp"
-                      className="form-control"
-                      maxLength="6"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={handleVerifyOtp}
-                  >
-                    Verify OTP
-                  </button>
-                </div>
-              )}
+          <div className="features-list">
+            <div className="feature-item">
+              <div className="feature-icon"><FaCheck /></div>
+              <span>Secure Medical Records</span>
             </div>
-          )}
-
-          {/* Step 2: Account Creation */}
-          {step === 2 && (
-            <div id="step2Form">
-              <div className="form-group">
-                <label htmlFor="date_of_birth">Date of Birth</label>
-                <input
-                  type="date"
-                  name="date_of_birth"
-                  className="form-control"
-                  value={formData.date_of_birth}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="aadhaar_number">Aadhaar Number</label>
-                <input
-                  type="text"
-                  name="aadhaar_number"
-                  className="form-control"
-                  value={formData.aadhaar_number}
-                  onChange={handleChange}
-                  maxLength="12"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="blood_group">Blood Group</label>
-                <input
-                  type="text"
-                  name="blood_group"
-                  className="form-control"
-                  value={formData.blood_group}
-                  onChange={handleChange}
-                  maxLength="3"
-                  placeholder="e.g., A+"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="address">Address</label>
-                <textarea
-                  name="address"
-                  className="form-control"
-                  value={formData.address}
-                  onChange={handleChange}
-                  rows="2"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="password">Password *</label>
-                <div className="password-toggle">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    className="form-control"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="toggle-password"
-                    onClick={() => setShowPassword(!showPassword)}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="password2">Confirm Password *</label>
-                <div className="password-toggle">
-                  <input
-                    type={showPassword2 ? 'text' : 'password'}
-                    name="password2"
-                    className="form-control"
-                    value={formData.password2}
-                    onChange={handleChange}
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="toggle-password"
-                    onClick={() => setShowPassword2(!showPassword2)}
-                  />
-                </div>
-              </div>
-
-              <div className="checkbox-group">
-                <input type="checkbox" id="terms" required />
-                <label htmlFor="terms">
-                  I agree to the <a href="#">Terms of Service</a> and{' '}
-                  <a href="#">Privacy Policy</a>
-                </label>
-              </div>
-
-              <div className="form-row">
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={() => setStep(1)}
-                >
-                  Back
-                </button>
-                <button
-                  type="submit"
-                  className={`btn btn-primary ${loading ? 'btn-loading' : ''}`}
-                  disabled={loading}
-                >
-                  {loading ? 'Creating Account...' : 'Create Account'}
-                </button>
-              </div>
+            <div className="feature-item">
+              <div className="feature-icon"><FaCheck /></div>
+              <span>Easy Appointment Booking</span>
             </div>
-          )}
-        </form>
-
-        <div className="login-link">
-          Already have an account? <Link to="/login">Log in here</Link>
+            <div className="feature-item">
+              <div className="feature-icon"><FaCheck /></div>
+              <span>24/7 Doctor Access</span>
+            </div>
+            <div className="feature-item">
+              <div className="feature-icon"><FaCheck /></div>
+              <span>Digital Prescriptions</span>
+            </div>
+          </div>
         </div>
       </div>
-    </section>
+
+      {/* Right Side - Signup Form */}
+      <div className="auth-form-section">
+        <div className="form-container">
+          {/* Header */}
+          <div className="form-header">
+            <h1>Create Your Account</h1>
+            <p>Join thousands of patients managing their health with us</p>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="progress-container">
+            <div className="progress-bar">
+              <div 
+                className="progress-fill" 
+                style={{ width: `${progressPercentage}%` }}
+              ></div>
+            </div>
+            <div className="progress-steps">
+              <div className={`progress-step ${step >= 1 ? 'active' : ''}`}>
+                <div className="step-indicator">
+                  {step > 1 ? <FaCheck /> : 1}
+                </div>
+                <span>Contact Info</span>
+              </div>
+              <div className={`progress-step ${step >= 2 ? 'active' : ''}`}>
+                <div className="step-indicator">
+                  {step > 2 ? <FaCheck /> : 2}
+                </div>
+                <span>Personal Details</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Alert Messages */}
+          {alert.message && (
+            <div className={`alert-banner ${alert.type === 'success' ? 'success' : 'error'}`}>
+              <div className="alert-content">
+                <div className="alert-icon">
+                  {alert.type === 'success' ? '✓' : '⚠'}
+                </div>
+                <span>{alert.message}</span>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleCreateAccount} className="signup-form">
+            {/* Step 1: Contact Verification */}
+            {step === 1 && (
+              <div className="form-step active">
+                <div className="step-header">
+                  <h2>Contact Information</h2>
+                  <p>Let's start with your basic contact details</p>
+                </div>
+
+                <div className="input-grid">
+                  <div className={`form-field ${isFocused.full_name || formData.full_name ? 'focused' : ''}`}>
+                    <FaUser className="field-icon" />
+                    <input
+                      type="text"
+                      name="full_name"
+                      value={formData.full_name}
+                      onChange={handleChange}
+                      onFocus={() => handleFocus('full_name')}
+                      onBlur={() => handleBlur('full_name')}
+                      placeholder="Enter your full name"
+                      className="form-input"
+                      required
+                    />
+                    <label className="field-label">Full Name *</label>
+                  </div>
+
+                  <div className={`form-field ${isFocused.gender || formData.gender ? 'focused' : ''}`}>
+                    <FaVenusMars className="field-icon" />
+                    <select
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleChange}
+                      onFocus={() => handleFocus('gender')}
+                      onBlur={() => handleBlur('gender')}
+                      className="form-input"
+                      required
+                    >
+                      <option value=""></option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                    <label className="field-label">Gender *</label>
+                  </div>
+
+                  <div className={`form-field ${isFocused.phone || formData.phone ? 'focused' : ''}`}>
+                    <FaPhone className="field-icon" />
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      onFocus={() => handleFocus('phone')}
+                      onBlur={() => handleBlur('phone')}
+                      placeholder="Enter your phone number"
+                      className="form-input"
+                      required
+                    />
+                    <label className="field-label">Mobile Number *</label>
+                  </div>
+
+                  <div className={`form-field ${isFocused.email || formData.email ? 'focused' : ''}`}>
+                    <FaEnvelope className="field-icon" />
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      onFocus={() => handleFocus('email')}
+                      onBlur={() => handleBlur('email')}
+                      placeholder="Enter your email address"
+                      className="form-input"
+                      required
+                    />
+                    <label className="field-label">Email Address *</label>
+                  </div>
+                </div>
+
+                {/* OTP Section */}
+                <div className="otp-section">
+                  <button
+                    type="button"
+                    className="otp-btn"
+                    onClick={handleSendOtp}
+                    disabled={isResendDisabled}
+                  >
+                    {isResendDisabled
+                      ? `Resend in ${formatTime(countdown)}`
+                      : 'Send Verification Code'}
+                  </button>
+
+                  {otpSent && (
+                    <div className="otp-input-group">
+                      <label>Enter 6-digit verification code</label>
+                      <div className="otp-container">
+                        {otp.map((digit, index) => (
+                          <input
+                            key={index}
+                            id={`otp-${index}`}
+                            type="text"
+                            maxLength="1"
+                            value={digit}
+                            onChange={(e) => handleOtpChange(e.target.value, index)}
+                            className="otp-input"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Backspace' && !digit && index > 0) {
+                                document.getElementById(`otp-${index - 1}`).focus();
+                              }
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        className="verify-btn"
+                        onClick={handleVerifyOtp}
+                        disabled={otp.some(digit => !digit)}
+                      >
+                        Verify & Continue <FaArrowRight className="btn-icon" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Account Creation */}
+            {step === 2 && (
+              <div className="form-step active">
+                <div className="step-header">
+                  <h2>Personal Details</h2>
+                  <p>Complete your profile for better healthcare experience</p>
+                </div>
+
+                <div className="input-grid">
+                  <div className={`form-field ${isFocused.date_of_birth || formData.date_of_birth ? 'focused' : ''}`}>
+                    <FaCalendarAlt className="field-icon" />
+                    <input
+                      type="date"
+                      name="date_of_birth"
+                      value={formData.date_of_birth}
+                      onChange={handleChange}
+                      onFocus={() => handleFocus('date_of_birth')}
+                      onBlur={() => handleBlur('date_of_birth')}
+                      className="form-input"
+                    />
+                    <label className="field-label">Date of Birth</label>
+                  </div>
+
+                  <div className={`form-field ${isFocused.aadhaar_number || formData.aadhaar_number ? 'focused' : ''}`}>
+                    <FaIdCard className="field-icon" />
+                    <input
+                      type="text"
+                      name="aadhaar_number"
+                      value={formData.aadhaar_number}
+                      onChange={handleChange}
+                      onFocus={() => handleFocus('aadhaar_number')}
+                      onBlur={() => handleBlur('aadhaar_number')}
+                      placeholder="12-digit Aadhaar number"
+                      className="form-input"
+                      maxLength="12"
+                    />
+                    <label className="field-label">Aadhaar Number</label>
+                  </div>
+
+                  <div className={`form-field ${isFocused.blood_group || formData.blood_group ? 'focused' : ''}`}>
+                    <FaTint className="field-icon" />
+                    <input
+                      type="text"
+                      name="blood_group"
+                      value={formData.blood_group}
+                      onChange={handleChange}
+                      onFocus={() => handleFocus('blood_group')}
+                      onBlur={() => handleBlur('blood_group')}
+                      placeholder="e.g., A+"
+                      className="form-input"
+                      maxLength="3"
+                    />
+                    <label className="field-label">Blood Group</label>
+                  </div>
+
+                  <div className={`form-field full-width ${isFocused.address || formData.address ? 'focused' : ''}`}>
+                    <FaMapMarkerAlt className="field-icon" />
+                    <textarea
+                      name="address"
+                      value={formData.address}
+                      onChange={handleChange}
+                      onFocus={() => handleFocus('address')}
+                      onBlur={() => handleBlur('address')}
+                      placeholder="Enter your complete address"
+                      className="form-input"
+                      rows="3"
+                    />
+                    <label className="field-label">Address</label>
+                  </div>
+
+                  <div className={`form-field ${isFocused.password || formData.password ? 'focused' : ''}`}>
+                    <FaLock className="field-icon" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      onFocus={() => handleFocus('password')}
+                      onBlur={() => handleBlur('password')}
+                      placeholder="Create a strong password"
+                      className="form-input"
+                      required
+                    />
+                    <label className="field-label">Password *</label>
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+
+                  <div className={`form-field ${isFocused.password2 || formData.password2 ? 'focused' : ''}`}>
+                    <FaLock className="field-icon" />
+                    <input
+                      type={showPassword2 ? 'text' : 'password'}
+                      name="password2"
+                      value={formData.password2}
+                      onChange={handleChange}
+                      onFocus={() => handleFocus('password2')}
+                      onBlur={() => handleBlur('password2')}
+                      placeholder="Confirm your password"
+                      className="form-input"
+                      required
+                    />
+                    <label className="field-label">Confirm Password *</label>
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowPassword2(!showPassword2)}
+                    >
+                      {showPassword2 ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Terms Agreement */}
+                <div className="terms-agreement">
+                  <label className="checkbox-container">
+                    <input type="checkbox" required />
+                    <span className="checkmark"></span>
+                    I agree to the <a href="#" className="link">Terms of Service</a> and{' '}
+                    <a href="#" className="link">Privacy Policy</a>
+                  </label>
+                </div>
+
+                {/* Form Actions */}
+                <div className="form-actions">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setStep(1)}
+                  >
+                    <FaArrowLeft className="btn-icon" />
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    className={`submit-btn ${loading ? 'loading' : ''}`}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <div className="spinner"></div>
+                        Creating Account...
+                      </>
+                    ) : (
+                      <>
+                        Create Account
+                        <FaArrowRight className="btn-icon" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </form>
+
+          {/* Login Redirect */}
+          <div className="auth-redirect">
+            <p>Already have an account?</p>
+            <Link to="/login" className="redirect-link">
+              Sign in to your account <FaArrowRight className="link-icon" />
+            </Link>
+          </div>
+
+          {/* Security Notice */}
+          <div className="security-notice">
+            <FaShieldAlt className="shield-icon" />
+            <span>Your personal and medical data is protected with bank-level security</span>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

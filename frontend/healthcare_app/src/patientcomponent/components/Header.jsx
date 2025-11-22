@@ -33,6 +33,7 @@ function Header() {
     try {
       await logout();
       setIsMobileNavActive(false);
+       window.location.href = "/patient/dashboard"
     } catch (err) {
       console.error("Logout error:", err);
     }

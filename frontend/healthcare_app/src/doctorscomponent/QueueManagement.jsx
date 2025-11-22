@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import apiService from '../services/api';
 import './QueueManagement.css';
 
-// Helper Components (PriorityTag, AppointmentType, StatusBadge)
+// Helper Components (unchanged)
 const PriorityTag = ({ priority }) => {
   if (!priority) return null;
   const config = {
@@ -43,7 +43,7 @@ const StatusBadge = ({ status }) => {
 const QueueManagement = () => {
   const { user } = useAuth();
 
-  // State
+  // State (unchanged)
   const [queue, setQueue] = useState([]);
   const [availableDoctors, setAvailableDoctors] = useState([]);
   const [isPaused, setIsPaused] = useState(false);
@@ -59,7 +59,7 @@ const QueueManagement = () => {
   const [walkinPriority, setWalkinPriority] = useState('normal');
   const [walkinReason, setWalkinReason] = useState('');
 
-  // Fetch queue data and doctors list
+  // Fetch functions (unchanged)
   const fetchQueueData = async () => {
     try {
       setLoading(true);
@@ -79,7 +79,6 @@ const QueueManagement = () => {
   const fetchDoctors = async () => {
     try {
       console.log('📡 API CALL → GET /doctor/');
-      // Public list of doctors
       const response = await apiService.getDepartments ? await apiService.getDoctors() : await apiService.request('/doctor/');
       console.log('✅ API RESPONSE → /doctor/', response);
       setAvailableDoctors(Array.isArray(response) ? response : (response?.results || []));
@@ -95,7 +94,7 @@ const QueueManagement = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Filters and stats
+  // Filters and stats (unchanged)
   const filteredQueue = useMemo(() => {
     if (!searchTerm) return queue;
     const lowerSearch = searchTerm.toLowerCase();
@@ -122,7 +121,7 @@ const QueueManagement = () => {
     };
   }, [queue]);
 
-  // Actions
+  // Action handlers (unchanged)
   const handlePauseQueue = () => {
     setIsPaused(true);
     console.log('Queue paused (local state).');
@@ -143,7 +142,6 @@ const QueueManagement = () => {
     setWalkinReason('');
   };
 
-  // Start consultation
   const handleStartConsultation = async (appointment) => {
     try {
       console.log('📡 ACTION → POST /appointments/{id}/start_consultation/', appointment.id);
@@ -156,7 +154,6 @@ const QueueManagement = () => {
     }
   };
 
-  // Reassign patient
   const handleReassign = async () => {
     if (!selectedDoctorId || !modalState.data) return;
 
@@ -192,9 +189,6 @@ const QueueManagement = () => {
     }
   };
 
-
-
-  // Mark no-show
   const handleNoShow = async () => {
     if (!modalState.data) return;
     const appointment = modalState.data;
@@ -213,13 +207,11 @@ const QueueManagement = () => {
     }
   };
 
-  // Add walk-in
   const handleAddWalkin = async () => {
     alert("Walk-in flow is not available in this build. Please use the appointment booking flow.");
     closeModal();
   };
 
-  // Move patient in queue (local reorder only)
   const handleMove = (token, direction) => {
     setQueue(prevQueue => {
       const index = prevQueue.findIndex(p => p.token_number === token);
@@ -236,249 +228,467 @@ const QueueManagement = () => {
 
   return (
     <>
-      {/* Main Content */}
-      <div className="container">
-        <div className="queue-header">
-          <h1 className="queue-title">Today's Appointments</h1>
-          <div className="queue-actions">
-            {!isPaused && (
-              <button className="btn btn-primary" onClick={handlePauseQueue}>
-                <i className="fas fa-pause"></i> Pause Queue
-              </button>
-            )}
-            {isPaused && (
-              <button className="btn btn-secondary" onClick={handleResumeQueue}>
-                <i className="fas fa-play"></i> Resume Queue
-              </button>
-            )}
-            <button className="btn btn-secondary" onClick={() => openModal('walkin')}>
-              <i className="fas fa-user-plus"></i> Add Walk-in
-            </button>
-          </div>
-        </div>
-
-        <div className="queue-stats">
-          <div className="stat-card">
-            <div className="stat-value stat-waiting">{stats.waiting}</div>
-            <div className="stat-label">Waiting</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value stat-in-progress">{stats.inProgress}</div>
-            <div className="stat-label">In Progress</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value stat-completed">{stats.completed}</div>
-            <div className="stat-label">Completed</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.total}</div>
-            <div className="stat-label">Total Today</div>
-          </div>
-        </div>
-
-        {/* Pause Panel */}
-        <div className={`pause-panel ${isPaused ? 'show' : ''}`}>
-          <div className="pause-message">
-            <i className="fas fa-exclamation-triangle"></i>
-            <span>Queue is currently paused. New tokens will not be assigned until resumed.</span>
-          </div>
-          <button className="btn btn-secondary" onClick={handleResumeQueue}>
-            <i className="fas fa-play"></i> Resume Queue
-          </button>
-        </div>
-
-        <div className="queue-controls">
-          <div className="search-filter">
-            <div className="search-box">
-              <i className="fas fa-search search-icon"></i>
-              <input
-                type="text"
-                placeholder="Search by patient name or token..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+      {/* Medical Dashboard Style */}
+      <div className="medical-dashboard">
+        {/* Header with Medical Theme */}
+        <div className="dashboard-header">
+          <div className="header-left">
+            <div className="clinic-brand">
+              <i className="fas fa-hospital"></i>
+              <div className="brand-text">
+                <h1>Patient Queue</h1>
+                <p>Medical Consultation Management</p>
+              </div>
             </div>
-            <button className="filter-btn">
-              <i className="fas fa-filter"></i> Filter
-            </button>
+          </div>
+          <div className="header-right">
+            <div className="queue-controls">
+              {!isPaused ? (
+                <button className="control-btn pause-btn" onClick={handlePauseQueue}>
+                  <i className="fas fa-pause"></i>
+                  Pause Queue
+                </button>
+              ) : (
+                <button className="control-btn resume-btn" onClick={handleResumeQueue}>
+                  <i className="fas fa-play"></i>
+                  Resume Queue
+                </button>
+              )}
+              <button className="control-btn walkin-btn" onClick={() => openModal('walkin')}>
+                <i className="fas fa-user-plus"></i>
+                Add Walk-in
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="queue-table-container">
-          <table className="queue-table">
-            <thead>
-              <tr>
-                <th>Token No.</th>
-                <th>Time Slot</th>
-                <th>Patient</th>
-                <th>Appointment Type</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+        {/* Status Overview */}
+        <div className="status-overview">
+          <div className="status-card waiting">
+            <div className="status-icon">
+              <i className="fas fa-clock"></i>
+            </div>
+            <div className="status-info">
+              <div className="status-count">{stats.waiting}</div>
+              <div className="status-label">Waiting</div>
+            </div>
+          </div>
+          <div className="status-card in-progress">
+            <div className="status-icon">
+              <i className="fas fa-user-md"></i>
+            </div>
+            <div className="status-info">
+              <div className="status-count">{stats.inProgress}</div>
+              <div className="status-label">In Consultation</div>
+            </div>
+          </div>
+          <div className="status-card completed">
+            <div className="status-icon">
+              <i className="fas fa-check-circle"></i>
+            </div>
+            <div className="status-info">
+              <div className="status-count">{stats.completed}</div>
+              <div className="status-label">Completed</div>
+            </div>
+          </div>
+          <div className="status-card total">
+            <div className="status-icon">
+              <i className="fas fa-list-alt"></i>
+            </div>
+            <div className="status-info">
+              <div className="status-count">{stats.total}</div>
+              <div className="status-label">Total Today</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Pause Alert */}
+        {isPaused && (
+          <div className="medical-alert">
+            <div className="alert-icon">
+              <i className="fas fa-exclamation-triangle"></i>
+            </div>
+            <div className="alert-content">
+              <h4>Queue Paused</h4>
+              <p>New patient assignments are temporarily suspended</p>
+            </div>
+            <button className="alert-action" onClick={handleResumeQueue}>
+              Resume Queue
+            </button>
+          </div>
+        )}
+
+        {/* Main Content Area */}
+        <div className="dashboard-content">
+          {/* Left Sidebar - Quick Actions */}
+          <div className="sidebar">
+            <div className="sidebar-section">
+              <h3>Quick Actions</h3>
+              <div className="action-buttons">
+                <button className="sidebar-btn primary">
+                  <i className="fas fa-sync-alt"></i>
+                  Refresh Data
+                </button>
+                <button className="sidebar-btn secondary">
+                  <i className="fas fa-print"></i>
+                  Print Queue
+                </button>
+              </div>
+            </div>
+
+            <div className="sidebar-section">
+              <h3>Auto Assist</h3>
+              <div className="toggle-section">
+                <label className="medical-toggle">
+                  <input
+                    type="checkbox"
+                    checked={autoAssistEnabled}
+                    onChange={(e) => setAutoAssistEnabled(e.target.checked)}
+                  />
+                  <span className="toggle-slider"></span>
+                  <span className="toggle-label">Enable Auto Reassign</span>
+                </label>
+                <p className="toggle-description">
+                  Automatically reassign patients waiting longer than 30 minutes
+                </p>
+              </div>
+            </div>
+
+            <div className="sidebar-section">
+              <h3>Queue Stats</h3>
+              <div className="stats-list">
+                <div className="stat-item">
+                  <span className="stat-name">Average Wait Time</span>
+                  <span className="stat-value">18 min</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-name">Consultation Time</span>
+                  <span className="stat-value">12 min</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-name">Patient Satisfaction</span>
+                  <span className="stat-value">94%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Queue Area */}
+          <div className="main-content">
+            {/* Search and Filters */}
+            <div className="content-header">
+              <div className="search-box">
+                <i className="fas fa-search"></i>
+                <input
+                  type="text"
+                  placeholder="Search patients by name or token number..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="filter-options">
+                <span className="results-count">
+                  {filteredQueue.length} patients found
+                </span>
+                <div className="view-toggles">
+                  <button className="view-toggle active">
+                    <i className="fas fa-list"></i>
+                  </button>
+                  <button className="view-toggle">
+                    <i className="fas fa-grid"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Patient Queue */}
+            <div className="patient-queue">
               {filteredQueue.map((patient, index) => (
-                <tr key={patient.id}>
-                  <td>
-                    <div className="token-cell">
-                      <div className="token-number">{patient.token_number}</div>
-                      <div className="token-actions">
-                        <button className="action-btn" title="Move Up" onClick={() => handleMove(patient.token_number, 'up')} disabled={index === 0}>
-                          <i className="fas fa-arrow-up"></i>
-                        </button>
-                        <button className="action-btn" title="Move Down" onClick={() => handleMove(patient.token_number, 'down')} disabled={index === filteredQueue.length - 1}>
-                          <i className="fas fa-arrow-down"></i>
-                        </button>
+                <div key={patient.id} className="patient-card">
+                  <div className="card-header">
+                    <div className="patient-token">
+                      <span className="token-number">#{patient.token_number}</span>
+                      <span className="appointment-time">{patient.time_slot}</span>
+                    </div>
+                    <div className="patient-status">
+                      <StatusBadge status={patient.status} />
+                      <AppointmentType type={patient.booking_type || 'appointment'} />
+                    </div>
+                  </div>
+
+                  <div className="card-body">
+                    <div className="patient-info">
+                      <div className="patient-avatar">
+                        <i className="fas fa-user-injured"></i>
+                      </div>
+                      <div className="patient-details">
+                        <h4 className="patient-name">{patient.patient_name}</h4>
+                        <div className="patient-meta">
+                          <span className="patient-age">
+                            <i className="fas fa-birthday-cake"></i>
+                            {patient.patient_age || 'N/A'} years
+                          </span>
+                          <span className="patient-gender">
+                            <i className="fas fa-venus-mars"></i>
+                            {patient.gender || 'Not specified'}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </td>
-                  <td>{patient.time_slot}</td>
-                  <td>
-                    <div className="patient-cell">
-                      <div className="patient-name">{patient.patient_name}</div>
-                      <div className="patient-age">{patient.patient_age || 'N/A'} years</div>
-                    </div>
-                  </td>
-                  <td><AppointmentType type={patient.booking_type || 'appointment'} /></td>
-                  <td><PriorityTag priority={patient.priority} /></td>
-                  <td><StatusBadge status={patient.status} /></td>
-                  <td>
-                    <div className="row-actions">
+
+                    {patient.priority && (
+                      <div className="priority-indicator">
+                        <PriorityTag priority={patient.priority} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="card-footer">
+                    <div className="action-buttons">
                       <button
-                        className="row-action-btn start-btn"
+                        className="action-btn consult-btn"
                         onClick={() => handleStartConsultation(patient)}
                         disabled={patient.status === 'inprogress' || patient.status === 'completed'}
                       >
-                        <i className="fas fa-play"></i> Start
+                        <i className="fas fa-play-circle"></i>
+                        Start Consult
                       </button>
-                      <button className="row-action-btn reassign-btn" onClick={() => openModal('reassign', patient)}>
-                        <i className="fas fa-exchange-alt"></i> Reassign
-                      </button>
-                      <button className="row-action-btn noshow-btn danger" onClick={() => openModal('noshow', patient)}>
-                        <i className="fas fa-user-times"></i> No-Show
-                      </button>
+                      <div className="secondary-actions">
+                        <button 
+                          className="icon-btn reassign"
+                          onClick={() => openModal('reassign', patient)}
+                          title="Reassign Doctor"
+                        >
+                          <i className="fas fa-exchange-alt"></i>
+                        </button>
+                        <button 
+                          className="icon-btn noshow"
+                          onClick={() => openModal('noshow', patient)}
+                          title="Mark as No-Show"
+                        >
+                          <i className="fas fa-user-times"></i>
+                        </button>
+                        <div className="move-buttons">
+                          <button 
+                            className="move-btn" 
+                            onClick={() => handleMove(patient.token_number, 'up')}
+                            disabled={index === 0}
+                            title="Move Up"
+                          >
+                            <i className="fas fa-arrow-up"></i>
+                          </button>
+                          <button 
+                            className="move-btn"
+                            onClick={() => handleMove(patient.token_number, 'down')}
+                            disabled={index === filteredQueue.length - 1}
+                            title="Move Down"
+                          >
+                            <i className="fas fa-arrow-down"></i>
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Auto-assist Panel */}
-        <div className="auto-assist">
-          <div className="auto-assist-header">
-            <h3 className="auto-assist-title">Auto-assign Backup Doctor</h3>
-            <label className="toggle-switch">
-              <input
-                type="checkbox"
-                checked={autoAssistEnabled}
-                onChange={(e) => setAutoAssistEnabled(e.target.checked)}
-              />
-              <span className="toggle-slider"></span>
-            </label>
+            </div>
           </div>
-          <p>When enabled, patients will be automatically reassigned to available backup doctors if queue wait time exceeds 30 minutes.</p>
         </div>
       </div>
 
-      {/* --- Modals --- */}
+      {/* Medical Style Modals */}
 
       {/* Reassignment Modal */}
-      <div className={`modal ${modalState.type === 'reassign' ? 'show' : ''}`}>
-        <div className="modal-content">
-          <div className="modal-header">
-            <h3 className="modal-title">Reassign Patient</h3>
-            <button className="modal-close" onClick={closeModal}>&times;</button>
-          </div>
-          <div className="modal-body">
-            <div className="form-group">
-              <label className="form-label">Patient: <strong>{modalState.data?.patient_name} (Token {modalState.data?.token_number})</strong></label>
+      {modalState.type === 'reassign' && (
+        <div className="medical-modal show">
+          <div className="modal-backdrop" onClick={closeModal}></div>
+          <div className="modal-container">
+            <div className="modal-header">
+              <i className="fas fa-exchange-alt"></i>
+              <h2>Reassign Patient</h2>
+              <button className="modal-close" onClick={closeModal}>
+                <i className="fas fa-times"></i>
+              </button>
             </div>
-            <div className="form-group">
-              <label className="form-label">Select Doctor:</label>
-              <div className="doctor-list">
-                {availableDoctors.map(doc => (
-                  <div
-                    key={doc.id}
-                    className={`doctor-item ${selectedDoctorId === doc.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedDoctorId(doc.id)}
-                  >
-                    <div className="doctor-name">{doc.full_name}</div>
-                    <div className="doctor-specialty">{doc.specialty}</div>
-                  </div>
-                ))}
+            
+            <div className="modal-body">
+              <div className="patient-info-card">
+                <div className="patient-avatar large">
+                  <i className="fas fa-user-injured"></i>
+                </div>
+                <div className="patient-details">
+                  <h3>{modalState.data?.patient_name}</h3>
+                  <p>Token #{modalState.data?.token_number}</p>
+                </div>
+              </div>
+
+              <div className="doctor-selection">
+                <h4>Select New Doctor</h4>
+                <div className="doctors-list">
+                  {availableDoctors.map(doc => (
+                    <div
+                      key={doc.id}
+                      className={`doctor-card ${selectedDoctorId === doc.id ? 'selected' : ''}`}
+                      onClick={() => setSelectedDoctorId(doc.id)}
+                    >
+                      <div className="doctor-avatar">
+                        <i className="fas fa-user-md"></i>
+                      </div>
+                      <div className="doctor-info">
+                        <h5>{doc.full_name}</h5>
+                        <p>{doc.specialty}</p>
+                        <span className="availability available">Available</span>
+                      </div>
+                      {selectedDoctorId === doc.id && (
+                        <div className="selection-check">
+                          <i className="fas fa-check"></i>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-          <div className="modal-footer">
-            <button className="btn btn-outline" onClick={closeModal}>Cancel</button>
-            <button className="btn btn-primary" onClick={handleReassign} disabled={!selectedDoctorId}>Reassign</button>
+            
+            <div className="modal-footer">
+              <button className="btn btn-outline" onClick={closeModal}>Cancel</button>
+              <button 
+                className="btn btn-primary" 
+                onClick={handleReassign} 
+                disabled={!selectedDoctorId}
+              >
+                <i className="fas fa-check"></i>
+                Confirm Reassignment
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* No-Show Modal */}
-      <div className={`modal ${modalState.type === 'noshow' ? 'show' : ''}`}>
-        <div className="modal-content">
-          <div className="modal-header">
-            <h3 className="modal-title">Mark Patient as No-Show</h3>
-            <button className="modal-close" onClick={closeModal}>&times;</button>
-          </div>
-          <div className="modal-body">
-            <div className="form-group">
-              <label className="form-label">Patient: <strong>{modalState.data?.patient_name} (Token {modalState.data?.token_number})</strong></label>
+      {modalState.type === 'noshow' && (
+        <div className="medical-modal show">
+          <div className="modal-backdrop" onClick={closeModal}></div>
+          <div className="modal-container">
+            <div className="modal-header warning">
+              <i className="fas fa-exclamation-triangle"></i>
+              <h2>Mark as No-Show</h2>
+              <button className="modal-close" onClick={closeModal}>
+                <i className="fas fa-times"></i>
+              </button>
             </div>
-            <div className="form-group">
-              <div style={{ background: 'rgba(217, 83, 79, 0.1)', padding: '10px', borderRadius: '4px', marginBottom: '15px' }}>
-                <i className="fas fa-exclamation-triangle" style={{ color: 'var(--secondary)' }}></i>
-                <strong> Policy Warning:</strong> Marking a patient as no-show will count against their appointment history.
+            
+            <div className="modal-body">
+              <div className="warning-alert">
+                <div className="warning-icon">
+                  <i className="fas fa-exclamation-circle"></i>
+                </div>
+                <div className="warning-content">
+                  <h4>Important Notice</h4>
+                  <p>Marking a patient as no-show will be recorded in their medical history and may affect future appointment privileges.</p>
+                </div>
+              </div>
+
+              <div className="patient-info-card">
+                <div className="patient-avatar large warning">
+                  <i className="fas fa-user-injured"></i>
+                </div>
+                <div className="patient-details">
+                  <h3>{modalState.data?.patient_name}</h3>
+                  <p>Token #{modalState.data?.token_number}</p>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="modal-footer">
-            <button className="btn btn-outline" onClick={closeModal}>Cancel</button>
-            <button className="btn btn-danger" onClick={handleNoShow}>Mark as No-Show</button>
+            
+            <div className="modal-footer">
+              <button className="btn btn-outline" onClick={closeModal}>Cancel</button>
+              <button className="btn btn-danger" onClick={handleNoShow}>
+                <i className="fas fa-user-times"></i>
+                Confirm No-Show
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Add Walk-in Modal */}
-      <div className={`modal ${modalState.type === 'walkin' ? 'show' : ''}`}>
-        <div className="modal-content">
-          <div className="modal-header">
-            <h3 className="modal-title">Add Walk-in Patient</h3>
-            <button className="modal-close" onClick={closeModal}>&times;</button>
-          </div>
-          <div className="modal-body">
-            <div className="form-group">
-              <label className="form-label">Patient Name</label>
-              <input type="text" className="form-control" placeholder="Enter patient name" value={walkinName} onChange={e => setWalkinName(e.target.value)} />
+      {modalState.type === 'walkin' && (
+        <div className="medical-modal show">
+          <div className="modal-backdrop" onClick={closeModal}></div>
+          <div className="modal-container">
+            <div className="modal-header">
+              <i className="fas fa-user-plus"></i>
+              <h2>Add Walk-in Patient</h2>
+              <button className="modal-close" onClick={closeModal}>
+                <i className="fas fa-times"></i>
+              </button>
             </div>
-            <div className="form-group">
-              <label className="form-label">Age</label>
-              <input type="number" className="form-control" placeholder="Enter age" value={walkinAge} onChange={e => setWalkinAge(e.target.value)} />
+            
+            <div className="modal-body">
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>
+                    <i className="fas fa-user"></i>
+                    Patient Name
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="Enter full name"
+                    value={walkinName}
+                    onChange={e => setWalkinName(e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>
+                    <i className="fas fa-birthday-cake"></i>
+                    Age
+                  </label>
+                  <input 
+                    type="number" 
+                    placeholder="Enter age"
+                    value={walkinAge}
+                    onChange={e => setWalkinAge(e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>
+                    <i className="fas fa-flag"></i>
+                    Priority
+                  </label>
+                  <select 
+                    value={walkinPriority}
+                    onChange={e => setWalkinPriority(e.target.value)}
+                  >
+                    <option value="normal">Normal Priority</option>
+                    <option value="emergency">Emergency</option>
+                    <option value="vip">VIP</option>
+                  </select>
+                </div>
+                <div className="form-group full-width">
+                  <label>
+                    <i className="fas fa-stethoscope"></i>
+                    Reason for Visit
+                  </label>
+                  <textarea 
+                    placeholder="Brief description of symptoms or reason for visit..."
+                    rows="3"
+                    value={walkinReason}
+                    onChange={e => setWalkinReason(e.target.value)}
+                  ></textarea>
+                </div>
+              </div>
             </div>
-            <div className="form-group">
-              <label className="form-label">Priority</label>
-              <select className="form-control" value={walkinPriority} onChange={e => setWalkinPriority(e.target.value)}>
-                <option value="normal">Normal</option>
-                <option value="emergency">Emergency</option>
-                <option value="vip">VIP</option>
-              </select>
+            
+            <div className="modal-footer">
+              <button className="btn btn-outline" onClick={closeModal}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleAddWalkin}>
+                <i className="fas fa-plus"></i>
+                Add to Queue
+              </button>
             </div>
-            <div className="form-group">
-              <label className="form-label">Reason for Visit</label>
-              <textarea className="form-control" rows="3" placeholder="Brief reason for visit..." value={walkinReason} onChange={e => setWalkinReason(e.target.value)}></textarea>
-            </div>
-          </div>
-          <div className="modal-footer">
-            <button className="btn btn-outline" onClick={closeModal}>Cancel</button>
-            <button className="btn btn-primary" onClick={handleAddWalkin}>Add to Queue</button>
           </div>
         </div>
-      </div>
+      )}
     </>
   );
 };

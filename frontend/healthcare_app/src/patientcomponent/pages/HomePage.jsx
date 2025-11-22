@@ -5,14 +5,29 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import apiService from "../../services/api";
 import "./HomePage.css";
+import { 
+  FaStethoscope, 
+  FaSyringe, 
+  FaAmbulance, 
+  FaBell, 
+  FaCheck, 
+  FaStar, 
+  FaClock,
+  FaUserMd,
+  FaArrowRight,
+  FaTimes,
+  FaCalendarAlt,
+  FaHeartbeat
+} from "react-icons/fa";
 
 const HomePage = () => {
   const { user, isAuthenticated } = useAuth();
+  const [showNotifPopup, setShowNotifPopup] = useState(false);
+
   const navigate = useNavigate();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [averageRating, setAverageRating] = useState(0);
-
 
   // Queue States
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
@@ -212,209 +227,327 @@ const HomePage = () => {
   }, [isAuthenticated, myTokenNumber]);
 
   return (
-    <>
+    
+    <div className="homepage-container">
+      
+
+
       {/* Hero Section */}
-      <section className="hero">
-        <div className="container hero-content">
-          <div className="hero-text">
-            <h1>Welcome to Our Hospital</h1>
-            <p>Book appointments, consult doctors, and manage your health easily.</p>
-            <div className="hero-buttons">
-              <button className="hero-btn btn-primary" onClick={() => navigate("/appointment")}>
-                Book Appointment
-              </button>
+      <section className="hero-section">
+        <div className="hero-background">
+          <div className="hero-content">
+            <div className="hero-text">
+              <div className="hero-badge">
+                <FaHeartbeat className="badge-icon" />
+                <span>Trusted Healthcare</span>
+              </div>
+              <h1>Your Health is Our <span className="highlight">Priority</span></h1>
+              <p>Experience world-class healthcare with our team of expert doctors, advanced facilities, and compassionate care. Your journey to better health starts here.</p>
+              <div className="hero-actions">
+                <button 
+                  className="btn btn-primary hero-btn"
+                  onClick={() => navigate("/appointment")}
+                >
+                  <FaCalendarAlt className="btn-icon" />
+                  Book Appointment
+                </button>
+               
+              </div>
+              
+              
             </div>
+            
           </div>
-          <div className="hero-image">
-            <div className="hero-img-placeholder">🏥</div>
+        </div>
+      </section>
+      
+
+      {/* Live Status Dashboard */}
+      <section className="dashboard-section">
+        <div className="container">
+          <div className="dashboard-grid">
+            {/* Queue Status Card */}
+            
+
+            {/* Notifications Card */}
+            <div className="dashboard-card notifications-card">
+              <div className="card-header">
+                <h3>Notifications</h3>
+                <div className="notifications-actions">
+                  {unreadNotifications > 0 && (
+                    <span className="unread-badge">{unreadNotifications}</span>
+                  )}
+                  <button
+                    className="btn-icon mark-all-btn"
+                    onClick={handleMarkAllNotificationsRead}
+                    disabled={notificationsLoading || unreadNotifications === 0}
+                    title="Mark all as read"
+                  >
+                    <FaCheck />
+                  </button>
+                </div>
+              </div>
+
+              <div className="notifications-list">
+                {notificationsLoading ? (
+                  <div className="loading-state">
+                    <div className="loading-spinner"></div>
+                    <span>Loading notifications...</span>
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="empty-icon">🔔</div>
+                    <p>No notifications yet</p>
+                  </div>
+                ) : (
+                  notifications.slice(0, 5).map((notif) => (
+                    <div
+                      key={notif.id}
+                      className={`notification-item ${notif.is_read ? "" : "unread"}`}
+                      onClick={() => !notif.is_read && handleMarkNotificationRead(notif.id)}
+                    >
+                      <div className="notification-icon">
+                        <FaBell />
+                      </div>
+                      <div className="notification-content">
+                        <div className="notification-title">{notif.title}</div>
+                        <div className="notification-message">{notif.message}</div>
+                        <div className="notification-meta">
+                          {new Date(notif.created_at).toLocaleString()}
+                          {notif.appointment_token && ` • Token ${notif.appointment_token}`}
+                        </div>
+                      </div>
+                      {!notif.is_read && <div className="unread-dot"></div>}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Services */}
-      <section className="section">
+      {/* Services Section */}
+      <section className="services-section">
         <div className="container">
-          <div className="section-title">
-            <h2>Our Services</h2>
-            <p>We provide a wide range of medical services for all your health needs.</p>
+          <div className="section-header">
+            <h2>Our Medical Services</h2>
+            <p>Comprehensive healthcare services for you and your family</p>
           </div>
 
           <div className="services-grid">
             <div className="service-card">
-              <div className="service-icon">🩺</div>
-              <h3>General Consultation</h3>
-              <p>Consult with top specialists.</p>
-            </div>
-
-            <div className="service-card">
-              <div className="service-icon">💉</div>
-              <h3>Vaccination</h3>
-              <p>Stay protected with essential vaccines.</p>
-            </div>
-
-            <div className="service-card">
-              <div className="service-icon">🏥</div>
-              <h3>Emergency Care</h3>
-              <p>24/7 emergency support.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Announcement */}
-      <section className="announcements">
-        <div className="container announcement-container">
-          <span className="announcement-label">Notice</span>
-          <div className="announcement-text">
-            <marquee>COVID-19 vaccination drive ongoing. Book your slot now!</marquee>
-          </div>
-        </div>
-      </section>
-
-      {/* LIVE QUEUE STATUS */}
-      <div className="queue-box">
-        <h3>Live Queue Status</h3>
-
-        <div className="current-token">
-          <span>Now Serving:</span>
-          <strong>{queue?.current_token || "—"}</strong>
-        </div>
-
-        <div className="pending-list">
-          <h4>Pending Tokens</h4>
-
-          {queue?.pending_tokens?.length > 0 ? (
-            queue.pending_tokens.map((item) => (
-              <div key={item.token_number} className={`token-item ${highlightToken === item.token_number ? "highlight" : ""}`}>
-                <span className="token-num">Token {item.token_number}</span>
-                <span className="token-name">{item.patient_name}</span>
-                <span className="eta">ETA: {item.eta_minutes ?? "—"} min</span>
+              <div className="service-icon-wrapper">
+                <FaStethoscope className="service-icon" />
               </div>
-            ))
-          ) : (
-            <p>No pending tokens</p>
-          )}
-        </div>
-      </div>
+              <h3>General Consultation</h3>
+              <p>Consult with our experienced specialists for comprehensive health assessments and personalized treatment plans.</p>
+              <button className="service-link">
+                Learn More <FaArrowRight />
+              </button>
+            </div>
 
-      {/* Notifications */}
-      <div className="notifications-box">
-        <div className="notifications-header">
-          <h3>Notifications</h3>
-          <div className="notifications-actions">
-            {unreadNotifications > 0 && (
-              <span className="unread-pill">{unreadNotifications} unread</span>
-            )}
-            <button
-              className="btn btn-outline mark-all"
-              onClick={handleMarkAllNotificationsRead}
-              disabled={notificationsLoading || unreadNotifications === 0}
-            >
-              Mark all read
+            <div className="service-card">
+              <div className="service-icon-wrapper">
+                <FaSyringe className="service-icon" />
+              </div>
+              <h3>Vaccination</h3>
+              <p>Stay protected with essential vaccines and immunization programs for all age groups.</p>
+              <button className="service-link">
+                Learn More <FaArrowRight />
+              </button>
+            </div>
+
+            <div className="service-card">
+              <div className="service-icon-wrapper">
+                <FaAmbulance className="service-icon" />
+              </div>
+              <h3>Emergency Care</h3>
+              <p>24/7 emergency medical services with rapid response teams and state-of-the-art facilities.</p>
+              <button className="service-link">
+                Learn More <FaArrowRight />
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Announcement Banner */}
+      <section className="announcement-banner">
+        <div className="container">
+          <div className="banner-content">
+            <div className="banner-icon">📢</div>
+            <div className="banner-text">
+              <strong>COVID-19 Update:</strong> Vaccination drive ongoing. Book your slot now for safe and secure vaccination.
+            </div>
+            <button className="banner-btn">
+              Book Now <FaArrowRight />
             </button>
           </div>
         </div>
+      </section>
 
-        {notificationsLoading ? (
-          <p>Loading notifications…</p>
-        ) : notifications.length === 0 ? (
-          <p>No notifications yet.</p>
-        ) : (
-          <div className="notifications-list">
-            {notifications.slice(0, 5).map((notif) => (
-              <div
-                key={notif.id}
-                className={`notification-item ${notif.is_read ? "" : "unread"}`}
+      {/* Doctors Section */}
+      <section className="doctors-section">
+        <div className="container">
+          <div className="section-header">
+            <h2>Meet Our Doctors</h2>
+            <p>Highly qualified medical professionals dedicated to your health</p>
+          </div>
+
+          <div className="doctors-grid">
+            {doctors.map((doc) => (
+              <div 
+                className="doctor-card" 
+                key={doc.id} 
+                onClick={() => openReviewModal(doc)}
               >
-                <div>
-                  <div className="notification-title">{notif.title}</div>
-                  <div className="notification-message">{notif.message}</div>
-                  <div className="notification-meta">
-                    {new Date(notif.created_at).toLocaleString()}
-                    {notif.appointment_token ? ` • Token ${notif.appointment_token}` : ""}
+                <div className="doctor-image">
+                  {doc.profile_image ? (
+                    <img src={doc.profile_image} alt={doc.full_name} />
+                  ) : (
+                    <div className="doctor-avatar">
+                      <FaUserMd />
+                    </div>
+                  )}
+                  <div className="doctor-status online"></div>
+                </div>
+                
+                <div className="doctor-info">
+                  <h3>{doc.full_name}</h3>
+                  <p className="doctor-specialty">
+                    {doc.department_name || "General Physician"}
+                  </p>
+                  <div className="doctor-rating">
+                    <FaStar className="star-icon" />
+                    <span>{averageRating || "New"}</span>
+                  </div>
+                  <div className="doctor-availability">
+                    <FaClock className="clock-icon" />
+                    <span>Mon - Fri • 10:00 AM - 6:00 PM</span>
                   </div>
                 </div>
-                {!notif.is_read && (
-                  <button
-                    className="btn btn-link"
-                    onClick={() => handleMarkNotificationRead(notif.id)}
-                  >
-                    Mark read
-                  </button>
-                )}
+                
+                <button className="view-profile-btn">
+                  View Profile <FaArrowRight />
+                </button>
               </div>
             ))}
           </div>
-        )}
-      </div>
-
-      {/* Doctors Section */}
-      <section className="doctors-section section">
-        <div className="doctors-slider">
-          {doctors.map((doc) => (
-            <div className="doctor-card" key={doc.id} onClick={() => openReviewModal(doc)}>
-              <div className="doctor-img">{doc.profile_image || "👨‍⚕️"}</div>
-
-              <div className="doctor-info">
-                <h3>{doc.full_name}</h3>
-                <div className="doctor-specialty">{doc.department_name || "General"}</div>
-                <div className="doctor-availability">
-                  <span>Mon-Fri</span>
-                  <span>10am - 6pm</span>
-                </div>
-              </div>
-            </div>
-          ))}
         </div>
       </section>
 
       {/* Review Modal */}
       {reviewModalOpen && (
-        <div className="review-modal-backdrop" onClick={closeReviewModal}>
+        <div className="modal-overlay" onClick={closeReviewModal}>
           <div className="review-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={closeReviewModal}>×</button>
-
-            <h2>{selectedDoctor?.full_name}</h2>
-            <p className="modal-specialty">{selectedDoctor?.specialty || selectedDoctor?.department_name}</p>
-            <div className="modal-rating">
-              ⭐ {averageRating || "No rating yet"} | Patient Reviews
-            </div>
-
-
-            <div className="modal-review-list">
-              {doctorReviews.length > 0 ? (
-                doctorReviews.map((review, index) => (
-                  <div className="review-item" key={index}>
-                    <div className="review-header">
-                      <strong>{review.patient_name}</strong>
-                      <span className="review-stars">⭐ {review.rating}</span>
+            <div className="modal-header">
+              <div className="doctor-modal-header">
+                <div className="doctor-modal-image">
+                  {selectedDoctor?.profile_image ? (
+                    <img src={selectedDoctor.profile_image} alt={selectedDoctor.full_name} />
+                  ) : (
+                    <div className="doctor-modal-avatar">
+                      <FaUserMd />
                     </div>
-                    <p className="review-text">{review.comment}</p>
+                  )}
+                </div>
+                <div className="doctor-modal-info">
+                  <h2>{selectedDoctor?.full_name}</h2>
+                  <p className="doctor-modal-specialty">
+                    {selectedDoctor?.specialty || selectedDoctor?.department_name}
+                  </p>
+                  <div className="doctor-modal-rating">
+                    <div className="rating-stars">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <FaStar 
+                          key={star} 
+                          className={`star ${star <= averageRating ? "filled" : ""}`}
+                        />
+                      ))}
+                    </div>
+                    <span className="rating-text">
+                      {averageRating} • {doctorReviews.length} reviews
+                    </span>
                   </div>
-                ))
-              ) : (
-                <p className="no-reviews">No reviews yet.</p>
-              )}
+                </div>
+              </div>
+              <button className="close-modal-btn" onClick={closeReviewModal}>
+                <FaTimes />
+              </button>
             </div>
 
-            {/* Add review form */}
-            <h3 className="add-review-title">Write a Review</h3>
-
-            <div className="review-form">
-              <div className="star-rating">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <span key={star} className={`star ${star <= rating ? "filled" : ""}`} onClick={() => setRating(star)}>⭐</span>
-                ))}
+            <div className="modal-content">
+              <div className="reviews-section">
+                <h3>Patient Reviews</h3>
+                <div className="reviews-list">
+                  {doctorReviews.length > 0 ? (
+                    doctorReviews.map((review, index) => (
+                      <div className="review-item" key={index}>
+                        <div className="review-header">
+                          <div className="reviewer-info">
+                            <strong>{review.patient_name}</strong>
+                            <div className="review-rating">
+                              {[...Array(5)].map((_, i) => (
+                                <FaStar 
+                                  key={i} 
+                                  className={`star ${i < review.rating ? "filled" : ""}`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <span className="review-date">
+                            {new Date(review.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="review-text">{review.comment}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="no-reviews">
+                      <FaStar className="no-reviews-icon" />
+                      <p>No reviews yet. Be the first to review!</p>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <textarea className="review-input" placeholder="Write your feedback..." value={comment} onChange={(e) => setComment(e.target.value)} />
-
-              <button className="submit-review-btn" onClick={handleSubmitReview}>Submit Review</button>
+              <div className="add-review-section">
+                <h3>Write a Review</h3>
+                <div className="review-form">
+                  <div className="star-rating-input">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <FaStar 
+                        key={star}
+                        className={`star ${star <= rating ? "filled" : ""}`}
+                        onClick={() => setRating(star)}
+                      />
+                    ))}
+                    <span className="rating-text">({rating}/5)</span>
+                  </div>
+                  
+                  <textarea 
+                    className="review-textarea"
+                    placeholder="Share your experience with this doctor..."
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    rows="4"
+                  />
+                  
+                  <button 
+                    className="submit-review-btn"
+                    onClick={handleSubmitReview}
+                    disabled={!rating}
+                  >
+                    Submit Review
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };
 

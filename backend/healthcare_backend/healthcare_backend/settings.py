@@ -28,7 +28,12 @@ INSTALLED_APPS = [
     'channels',
     # Local apps
     'healthcare',
+    'django_crontab',
     
+]
+CRONJOBS = [
+    # Run every day at midnight
+    ('0 0 * * *', 'django.core.management.call_command', ['reschedule_appointments']),
 ]
 
 MIDDLEWARE = [

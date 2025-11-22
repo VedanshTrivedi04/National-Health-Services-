@@ -208,52 +208,89 @@ const CabinDisplay = () => {
 
   return (
     <>
-      <div className="container">
-        <div className="cabin-header">
-          <h1 className="cabin-title">Cabin Display Controls</h1>
-          <div className="cabin-actions">
-            <button className="btn btn-primary" onClick={handleRefresh}>
-              <i className="fas fa-sync-alt"></i> Refresh Preview
-            </button>
+      <div className="cabin-display-dashboard">
+        {/* Modern Header */}
+        <div className="dashboard-header">
+          <div className="header-content">
+            <div className="header-title">
+              <h1>Cabin Display Controller</h1>
+              <p>Manage your cabin display and patient communications</p>
+            </div>
+            <div className="header-actions">
+              <button className="action-btn primary" onClick={handleRefresh}>
+                <i className="fas fa-sync-alt"></i>
+                Refresh Data
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="cabin-content">
-          <div className="cabin-preview-container">
-            <div className="preview-header">
-              <h3 className="preview-title">Cabin Display Preview</h3>
-              <div className="preview-actions">
-                <button className="btn btn-outline btn-sm" onClick={handleFullscreen}>
-                  <i className="fas fa-expand"></i> Fullscreen
+        <div className="dashboard-content">
+          {/* Preview Section */}
+          <div className="preview-section">
+            <div className="section-header">
+              <h2>Live Preview</h2>
+              <div className="preview-controls">
+                <button className="control-btn" onClick={handleFullscreen}>
+                  <i className="fas fa-expand"></i>
+                  Fullscreen
                 </button>
-                <button className="btn btn-outline btn-sm" onClick={handleReset}>
-                  <i className="fas fa-undo"></i> Reset
+                <button className="control-btn" onClick={handleReset}>
+                  <i className="fas fa-undo"></i>
+                  Reset
                 </button>
               </div>
             </div>
 
-            <div className="cabin-preview" ref={previewRef}>
-              <div className="cabin-header-info">
-                <div className="cabin-doctor-name">{doctorName}</div>
-                <div className="cabin-doctor-specialty">{doctorSpecialty}</div>
+            <div className="cabin-preview-modern" ref={previewRef}>
+              {/* Doctor Info Header */}
+              <div className="preview-doctor-header">
+                <div className="doctor-avatar">
+                  <i className="fas fa-user-md"></i>
+                </div>
+                <div className="doctor-info">
+                  <div className="doctor-name">{doctorName}</div>
+                  <div className="doctor-specialty">{doctorSpecialty}</div>
+                </div>
+                <div className="status-indicator active">
+                  <div className="status-dot"></div>
+                  <span>Online</span>
+                </div>
               </div>
 
-              <div className="cabin-status">
-                <div className="now-serving-label">NOW SERVING</div>
-                {showTokens && <div className="now-serving-token">{nowServing.token}</div>}
-                <div className="now-serving-patient">{getName(nowServing.patient)}</div>
+              {/* Now Serving Section */}
+              <div className="now-serving-section">
+                <div className="serving-label">NOW SERVING</div>
+                <div className="serving-content">
+                  {showTokens && (
+                    <div className="token-display">
+                      <div className="token-badge">#{nowServing.token}</div>
+                    </div>
+                  )}
+                  <div className="patient-name-large">{getName(nowServing.patient)}</div>
+                </div>
               </div>
 
-              {isMessageVisible && <div className="cabin-message show">{message}</div>}
+              {/* Announcement Message */}
+              {isMessageVisible && (
+                <div className="announcement-banner">
+                  <i className="fas fa-bullhorn"></i>
+                  <div className="announcement-text">{message}</div>
+                </div>
+              )}
 
+              {/* Upcoming Patients */}
               {showUpcoming && (
-                <div className="cabin-upcoming">
+                <div className="upcoming-section">
                   <div className="upcoming-label">COMING UP NEXT</div>
-                  <div className="upcoming-tokens">
-                    {upcomingTokens.map(t => (
-                      <div className="upcoming-token" key={String(t.token)}>
-                        {showTokens && <div className="token-number">{t.token}</div>}
-                        <div className="token-patient">{getName(t.patient)}</div>
+                  <div className="upcoming-list">
+                    {upcomingTokens.map((token, index) => (
+                      <div key={String(token.token)} className="upcoming-item">
+                        <div className="upcoming-position">#{index + 1}</div>
+                        <div className="upcoming-details">
+                          {showTokens && <div className="upcoming-token">Token {token.token}</div>}
+                          <div className="upcoming-patient">{getName(token.patient)}</div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -262,13 +299,158 @@ const CabinDisplay = () => {
             </div>
           </div>
 
-          {/* Controls panel UI intentionally preserved (not repeated here to keep file short) */}
+          {/* Controls Section */}
+          <div className="controls-section">
+            {/* Quick Messages */}
+            <div className="control-card">
+              <div className="card-header">
+                <h3>Quick Messages</h3>
+                <p>Send pre-defined announcements to patients</p>
+              </div>
+              <div className="quick-messages-grid">
+                {quickMessages.map((item, index) => (
+                  <button
+                    key={index}
+                    className="message-btn"
+                    onClick={() => handleQuickMessage(item.message)}
+                  >
+                    <i className={item.icon}></i>
+                    <span>{item.text}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Message */}
+            <div className="control-card">
+              <div className="card-header">
+                <h3>Custom Message</h3>
+                <p>Send a custom announcement</p>
+              </div>
+              <div className="custom-message-form">
+                <div className="input-group">
+                  <input
+                    type="text"
+                    placeholder="Type your message here..."
+                    value={customMessage}
+                    onChange={(e) => setCustomMessage(e.target.value)}
+                    className="message-input"
+                  />
+                  <button 
+                    className="send-btn"
+                    onClick={handleSendCustomMessage}
+                    disabled={!customMessage.trim()}
+                  >
+                    <i className="fas fa-paper-plane"></i>
+                  </button>
+                </div>
+                <button 
+                  className="clear-btn"
+                  onClick={handleClearMessage}
+                >
+                  <i className="fas fa-times"></i>
+                  Clear Message
+                </button>
+              </div>
+            </div>
+
+            {/* Display Settings */}
+            <div className="control-card">
+              <div className="card-header">
+                <h3>Display Settings</h3>
+                <p>Configure what information to show</p>
+              </div>
+              <div className="settings-grid">
+                <label className="setting-toggle">
+                  <input
+                    type="checkbox"
+                    checked={showFullNames}
+                    onChange={(e) => setShowFullNames(e.target.checked)}
+                  />
+                  <span className="toggle-slider"></span>
+                  <span className="toggle-label">Show Full Names</span>
+                </label>
+                <label className="setting-toggle">
+                  <input
+                    type="checkbox"
+                    checked={showTokens}
+                    onChange={(e) => setShowTokens(e.target.checked)}
+                  />
+                  <span className="toggle-slider"></span>
+                  <span className="toggle-label">Show Token Numbers</span>
+                </label>
+                <label className="setting-toggle">
+                  <input
+                    type="checkbox"
+                    checked={showUpcoming}
+                    onChange={(e) => setShowUpcoming(e.target.checked)}
+                  />
+                  <span className="toggle-slider"></span>
+                  <span className="toggle-label">Show Upcoming Patients</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Cabin Status */}
+            <div className="control-card">
+              <div className="card-header">
+                <h3>Cabin Status</h3>
+                <p>Set your current availability status</p>
+              </div>
+              <div className="status-buttons">
+                <button
+                  className={`status-btn ${cabinStatus === 'normal' ? 'active' : ''}`}
+                  onClick={() => handleSetStatus('normal', 'Normal', '')}
+                >
+                  <i className="fas fa-check-circle"></i>
+                  <span>Available</span>
+                </button>
+                <button
+                  className={`status-btn ${cabinStatus === 'break' ? 'active' : ''}`}
+                  onClick={() => handleSetStatus('break', 'On Break', 'Doctor on short break — back soon')}
+                >
+                  <i className="fas fa-coffee"></i>
+                  <span>On Break</span>
+                </button>
+                <button
+                  className={`status-btn ${cabinStatus === 'emergency' ? 'active' : ''}`}
+                  onClick={() => handleSetStatus('emergency', 'Emergency', 'Doctor in emergency — please wait')}
+                >
+                  <i className="fas fa-first-aid"></i>
+                  <span>Emergency</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Manual Call */}
+            <div className="control-card">
+              <div className="card-header">
+                <h3>Manual Call</h3>
+                <p>Call specific patients manually</p>
+              </div>
+              <div className="call-buttons">
+                {upcomingTokens.slice(0, 3).map((token) => (
+                  <button
+                    key={String(token.token)}
+                    className="call-btn"
+                    onClick={() => handleCallToken(token.token, token.patient)}
+                  >
+                    <i className="fas fa-bell"></i>
+                    <span>Call {showTokens ? `Token ${token.token}` : 'Patient'}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className={`toast ${toast.visible ? 'show' : ''}`}>
-        <i className="fas fa-check-circle"></i>
-        <span>{toast.message}</span>
+      {/* Modern Toast Notification */}
+      <div className={`modern-toast ${toast.visible ? 'show' : ''}`}>
+        <div className="toast-content">
+          <i className="fas fa-check-circle"></i>
+          <span>{toast.message}</span>
+        </div>
       </div>
     </>
   );

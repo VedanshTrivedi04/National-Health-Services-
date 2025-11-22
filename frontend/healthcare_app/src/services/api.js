@@ -1,7 +1,7 @@
 // src/services/api.js
 
-// const API_BASE_URL = 'http://127.0.0.1:8000/api';
-const API_BASE_URL = 'https://hawk-mysql-latter-interfaces.trycloudflare.com/api';
+const API_BASE_URL = 'http://127.0.0.1:8000/api';
+// const API_BASE_URL = 'https://chubby-separate-moon-platform.trycloudflare.com/api';
 
 class ApiService {
   constructor() {

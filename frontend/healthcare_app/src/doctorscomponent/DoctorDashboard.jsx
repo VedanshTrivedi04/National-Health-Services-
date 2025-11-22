@@ -3,7 +3,26 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import apiService from '../services/api';
 import './DoctorDashboard.css';
-
+import { 
+  FaUserMd, 
+  FaUser, 
+  FaClock, 
+  FaCheckCircle, 
+  FaTimesCircle, 
+  FaBullhorn,
+  FaPause,
+  FaPlay,
+  FaExclamationTriangle,
+  FaWifi,
+  FaStethoscope,
+  FaList,
+  FaChartBar,
+  FaCalendarDay,
+  FaStopwatch,
+  FaCog,
+  FaBell,
+  FaArrowRight
+} from 'react-icons/fa';
 
 const DoctorDashboard = () => {
   const { user } = useAuth();
@@ -92,9 +111,6 @@ const DoctorDashboard = () => {
   };
 
   // ============================
-  // END CONSULTATION
-  // ============================
-  // ============================
   // END CONSULTATION + AUTO CALL NEXT
   // ============================
   const handleEndConsultation = async () => {
@@ -129,10 +145,6 @@ const DoctorDashboard = () => {
     }
   };
 
-
-  // ============================
-  // MARK NO-SHOW
-  // ============================
   // ============================
   // MARK NO-SHOW + AUTO CALL NEXT
   // ============================
@@ -157,7 +169,6 @@ const DoctorDashboard = () => {
       alert("Cannot mark no-show.");
     }
   };
-
 
   // ============================
   // AVAILABILITY STATUS
@@ -210,209 +221,278 @@ const DoctorDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
+  if (loading) {
+    return (
+      <div className="doctor-dashboard-loading">
+        <div className="loading-spinner-large"></div>
+        <h2>Loading Your Dashboard...</h2>
+        <p>Preparing your daily schedule and patient queue</p>
+      </div>
+    );
+  }
 
-  if (loading) return <div className="loading-screen">Loading dashboard...</div>;
-
-  const statusMap = {
-    online: { cls: 'status-online', text: 'Accepting Tokens', icon: 'fas fa-circle' },
-    paused: { cls: 'status-offline', text: 'Paused', icon: 'fas fa-circle' },
-    break: { cls: 'status-break', text: 'On Break', icon: 'fas fa-circle' }
-  };
-
-  const s = statusMap[doctorStatus];
+  const activeAppointment = getActiveAppointment();
   const tooManyPatients = queue.length > 5;
+
   return (
-    <>
-      {/* HEADER */}
-      <div className="container">
-        <div className="doctor-header">
-          <div className="doctor-info">
-            <div className="doctor-avatar"><i className="fas fa-user-md"></i></div>
-            <div className="doctor-details">
-              <h1>{doctor?.full_name}</h1>
-              <p>{doctor?.specialty}</p>
-              <p><i className="far fa-clock"></i> Shift: 9:00 AM – 5:00 PM</p>
-              <div className={`status-badge ${s.cls}`}>
-                <i className={s.icon}></i> {s.text}
+    <div className="doctor-dashboard">
+      {/* Header Section */}
+      <div className="dashboard-header">
+        <div className="container">
+          <div className="header-content">
+            <div className="doctor-profile">
+              <div className="doctor-avatar-large">
+                <FaUserMd />
+              </div>
+              <div className="doctor-info">
+                <h1>Dr. {doctor?.full_name}</h1>
+                <p className="specialty">{doctor?.specialty || "General Physician"}</p>
+                <div className="doctor-meta">
+                  <div className="meta-item">
+                    <FaClock className="meta-icon" />
+                    <span>Shift: 9:00 AM – 5:00 PM</span>
+                  </div>
+                  <div className="meta-item">
+                    <FaCalendarDay className="meta-icon" />
+                    <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="status-toggle">
-            {["online", "paused", "break"].map((state) => (
-              <button
-                key={state}
-                onClick={() => handleStatusChange(state)}
-                className={`toggle-btn ${doctorStatus === state ? "active" : ""}`}
-              >
-                {state.charAt(0).toUpperCase() + state.slice(1)}
-              </button>
-            ))}
+            <div className="status-controls">
+              <div className="status-indicator">
+                <div className={`status-dot ${doctorStatus}`}></div>
+                <span className="status-text">
+                  {doctorStatus === 'online' ? 'Accepting Tokens' : 
+                   doctorStatus === 'paused' ? 'Paused' : 'On Break'}
+                </span>
+              </div>
+              
+              <div className="status-buttons">
+                <button 
+                  className={`status-btn ${doctorStatus === 'online' ? 'active' : ''}`}
+                  onClick={() => handleStatusChange('online')}
+                >
+                  <FaPlay className="btn-icon" />
+                  Online
+                </button>
+                <button 
+                  className={`status-btn ${doctorStatus === 'paused' ? 'active' : ''}`}
+                  onClick={() => handleStatusChange('paused')}
+                >
+                  <FaPause className="btn-icon" />
+                  Pause
+                </button>
+                <button 
+                  className={`status-btn ${doctorStatus === 'break' ? 'active' : ''}`}
+                  onClick={() => handleStatusChange('break')}
+                >
+                  <FaClock className="btn-icon" />
+                  Break
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* MAIN DASHBOARD */}
       <div className="container">
-        <div className="dashboard">
-
-          {/* LEFT — NOW SERVING + QUEUE */}
+        <div className="dashboard-content">
+          {/* Main Content - Left Side */}
           <div className="dashboard-main">
-
-            {/* NOW SERVING */}
-            <div className="dashboard-card now-serving">
+            {/* Current Consultation Card */}
+            <div className="dashboard-card current-consultation">
               <div className="card-header">
-                <h2 className="card-title" style={{ color: 'white' }}>Now Serving</h2>
-                <div className="consultation-timer">{formatTime(timer)}</div>
+                <h2>Now Serving</h2>
+                <div className="consultation-timer">
+                  <FaStopwatch className="timer-icon" />
+                  {formatTime(timer)}
+                </div>
               </div>
 
-              <div className="current-patient">
-                <div className="patient-avatar"><i className="fas fa-user"></i></div>
-
+              <div className="current-patient-info">
+                <div className="patient-avatar">
+                  <FaUser />
+                </div>
                 <div className="patient-details">
-                  <h3>Token N0   {getActiveAppointment()?.
-                    token_number
-                    || "—"}</h3>
-
-                  {/* Patient Name */}
-                  <p><strong>Patient:</strong> {getActiveAppointment()?.patient_name || "—"}</p>
-
-                  {/* Reason for visit */}
-                  <p><strong>Reason:</strong> {getActiveAppointment()?.reason || "—"}</p>
-
-                  {/* Appointment Time */}
-                  <p><strong>Time:</strong> {getActiveAppointment()?.time_slot || "—"}</p>
-
-                  {/* Status */}
-                  <p><strong>Status:</strong> {getActiveAppointment()?.status || "—"}</p>
-
-                  {/* Completed count */}
-                  <p><strong>Patients Served:</strong> {queueStats?.completed_tokens || 0}</p>
+                  <div className="token-display">
+                    <span className="token-label">Token</span>
+                    <span className="token-number">#{activeAppointment?.token_number || "—"}</span>
+                  </div>
+                  <h3 className="patient-name">{activeAppointment?.patient_name || "No Active Patient"}</h3>
+                  
+                  <div className="patient-meta">
+                    <div className="meta-row">
+                      <span className="meta-label">Reason:</span>
+                      <span className="meta-value">{activeAppointment?.reason || "—"}</span>
+                    </div>
+                    <div className="meta-row">
+                      <span className="meta-label">Time Slot:</span>
+                      <span className="meta-value">{activeAppointment?.time_slot || "—"}</span>
+                    </div>
+                    <div className="meta-row">
+                      <span className="meta-label">Status:</span>
+                      <span className={`status-tag ${activeAppointment?.status || 'waiting'}`}>
+                        {activeAppointment?.status || "—"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div className="consultation-actions">
-                <button className="btn btn-secondary" onClick={handleEndConsultation}>
-                  <i className="fas fa-check-circle"></i> End Consultation
+                <button className="btn btn-success" onClick={handleEndConsultation}>
+                  <FaCheckCircle className="btn-icon" />
+                  End Consultation
                 </button>
                 <button className="btn btn-danger" onClick={handleMarkNoShow}>
-                  <i className="fas fa-times-circle"></i> No-Show
+                  <FaTimesCircle className="btn-icon" />
+                  Mark No-Show
                 </button>
               </div>
             </div>
 
-            {/* QUEUE LIST */}
-            <div className="dashboard-card">
+            {/* Queue List */}
+            <div className="dashboard-card queue-section">
               <div className="card-header">
                 <h2>Today's Queue</h2>
                 <div className="queue-count">{queue.length} Patients</div>
               </div>
 
               <div className="queue-list">
-                {queue.map((appt) => (
-                  <div className="queue-item" key={appt.id}>
-                    <div className="token-info">
-                      <div className="token-number">{appt.token_number}</div>
-                      <div className="patient-brief">
-                        <div className="patient-name">{appt.patient_name}</div>
-                        <div className="appointment-type">{appt.reason}</div>
-                      </div>
+                {queue.map((appt, index) => (
+                  <div className={`queue-item ${appt.status === 'in_progress' ? 'active' : ''}`} key={appt.id}>
+                    <div className="queue-position">{index + 1}</div>
+                    <div className="queue-patient-info">
+                      <div className="patient-token">#{appt.token_number}</div>
+                      <div className="patient-name">{appt.patient_name}</div>
+                      <div className="appointment-reason">{appt.reason}</div>
                     </div>
-                    <div className="queue-status">
-                      <div className="eta">{appt.time_slot}</div>
-                      <div className={`status-label status-${appt.status}`}>{appt.status}</div>
+                    <div className="queue-meta">
+                      <div className="appointment-time">{appt.time_slot}</div>
+                      <div className={`status-badge status-${appt.status}`}>
+                        {appt.status.replace('_', ' ')}
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
+            {/* Workload Warning */}
             {tooManyPatients && (
-              <div className="workload-warning show">
+              <div className="workload-warning">
                 <div className="warning-header">
-                  <i className="fas fa-exclamation-triangle"></i>
+                  <FaExclamationTriangle className="warning-icon" />
                   <h3>High Queue Load</h3>
                 </div>
-                <p>Queue is too long. You may pause or request assistance.</p>
-
+                <p>Queue length is high. Consider pausing new tokens or requesting assistance.</p>
                 <div className="warning-actions">
                   <button className="btn btn-warning" onClick={handlePauseTokens}>
-                    <i className="fas fa-pause"></i> Pause Tokens
+                    <FaPause className="btn-icon" />
+                    Pause New Tokens
                   </button>
                   <button className="btn btn-outline">
-                    <i className="fas fa-user-md"></i> Request Help
+                    <FaUserMd className="btn-icon" />
+                    Request Assistance
                   </button>
                 </div>
               </div>
             )}
-
           </div>
 
-          {/* RIGHT — UPCOMING + STATS */}
+          {/* Sidebar - Right Side */}
           <div className="dashboard-sidebar">
+            {/* Quick Stats */}
+            <div className="dashboard-card stats-card">
+              <div className="card-header">
+                <h2>Today's Stats</h2>
+                <FaChartBar className="card-icon" />
+              </div>
+              <div className="stats-grid">
+                <div className="stat-item">
+                  <div className="stat-value">{queue.length}</div>
+                  <div className="stat-label">In Queue</div>
+                </div>
+                <div className="stat-item">
+                  <div className="stat-value">{queueStats?.completed_tokens || 0}</div>
+                  <div className="stat-label">Completed</div>
+                </div>
+                <div className="stat-item">
+                  <div className="stat-value">
+                    {queueStats?.average_time_per_patient || "—"}
+                  </div>
+                  <div className="stat-label">Avg Time (min)</div>
+                </div>
+              </div>
+            </div>
 
-            {/* UPCOMING PATIENTS */}
-            <div className="dashboard-card">
-              <div className="card-header"><h2>Upcoming Patients</h2></div>
-
-              <div className="upcoming-patients">
-                {upcoming.map((p) => (
-                  <div className="upcoming-patient" key={p.id}>
-                    <div className="upcoming-patient-info">
-                      <div className="upcoming-patient-avatar"><i className="fas fa-user"></i></div>
-                      <div>
-                        <div className="patient-name">{p.patient_name}</div>
-                        <div className="appointment-type">
-                          {p.token_number} • {p.time_slot}
-                        </div>
-                      </div>
+            {/* Upcoming Patients */}
+            <div className="dashboard-card upcoming-card">
+              <div className="card-header">
+                <h2>Upcoming Patients</h2>
+                <FaList className="card-icon" />
+              </div>
+              <div className="upcoming-list">
+                {upcoming.map((patient) => (
+                  <div className="upcoming-patient" key={patient.id}>
+                    <div className="upcoming-avatar">
+                      <FaUser />
                     </div>
+                    <div className="upcoming-info">
+                      <div className="upcoming-name">{patient.patient_name}</div>
+                      <div className="upcoming-time">#{patient.token_number} • {patient.time_slot}</div>
+                    </div>
+                    <FaArrowRight className="arrow-icon" />
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* QUICK STATS */}
-            <div className="dashboard-card">
-              <div className="card-header"><h2>Quick Stats</h2></div>
-
-              <div className="stats-grid">
-                <div className="stat-card">
-                  <div className="stat-value">{queue.length}</div>
-                  <div className="stat-label">Waiting</div>
-                </div>
-
-                <div className="stat-card">
-                  <div className="stat-value">{queueStats?.completed_tokens || 0}</div>
-                  <div className="stat-label">Completed</div>
-                </div>
-
-                <div className="stat-card">
-                  <div className="stat-value">
-                    {queueStats?.average_time_per_patient || "N/A"} min
-                  </div>
-                  <div className="stat-label">Avg Time</div>
-                </div>
-              </div>
-            </div>
-
-            {/* CALL NEXT BUTTON */}
-            <div className="call-next-container">
+            {/* Call Next Button */}
+            <div className="call-next-section">
               <button className="call-next-btn" onClick={handleCallNext}>
-                <i className="fas fa-bullhorn"></i> Call Next Patient
+                <FaBullhorn className="btn-icon" />
+                Call Next Patient
               </button>
             </div>
 
+            {/* Quick Actions */}
+            <div className="dashboard-card quick-actions">
+              <div className="card-header">
+                <h2>Quick Actions</h2>
+                <FaCog className="card-icon" />
+              </div>
+              <div className="actions-grid">
+                <button className="action-btn">
+                  <FaStethoscope className="action-icon" />
+                  <span>Medical Records</span>
+                </button>
+                <button className="action-btn">
+                  <FaBell className="action-icon" />
+                  <span>Notifications</span>
+                </button>
+                <button className="action-btn">
+                  <FaCalendarDay className="action-icon" />
+                  <span>Schedule</span>
+                </button>
+                <button className="action-btn">
+                  <FaChartBar className="action-icon" />
+                  <span>Reports</span>
+                </button>
+              </div>
+            </div>
           </div>
-
         </div>
       </div>
 
+      {/* Network Status */}
       <div className={`network-status ${isOffline ? 'show' : ''}`}>
-        <i className="fas fa-wifi"></i>
+        <FaWifi className="status-icon" />
         <span>Offline mode — waiting for connection...</span>
       </div>
-    </>
+    </div>
   );
 };
 
